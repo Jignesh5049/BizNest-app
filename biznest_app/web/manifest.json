@@ -1,11 +1,11 @@
 {
-    "name": "biznest_app",
-    "short_name": "biznest_app",
+    "name": "BizNest",
+    "short_name": "BizNest",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "BizNest - Business Management App",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

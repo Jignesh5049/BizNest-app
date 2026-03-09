@@ -18,7 +18,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _api = ApiService();
   List<dynamic> _addresses = [];
   String? _selectedAddressId;
-  String _paymentMethod = 'cod';
+  String _paymentMethod = 'cash';
   bool _loading = true;
   bool _placing = false;
 
@@ -312,7 +312,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               _sectionHeader('Payment Method', Icons.payment_outlined),
               const SizedBox(height: 12),
               _paymentOption(
-                'cod',
+                'cash',
                 'Cash on Delivery',
                 Icons.money,
                 'Pay when you receive',

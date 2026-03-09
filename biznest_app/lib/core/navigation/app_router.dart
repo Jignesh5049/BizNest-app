@@ -13,6 +13,7 @@ import '../../features/business/screens/expenses_screen.dart';
 import '../../features/business/screens/analytics_screen.dart';
 import '../../features/business/screens/pricing_screen.dart';
 import '../../features/business/screens/invoices_screen.dart';
+import '../../features/business/screens/invoice_detail_screen.dart';
 import '../../features/business/screens/learn_screen.dart';
 import '../../features/business/screens/settings_screen.dart';
 import '../../features/business/screens/support_screen.dart';
@@ -60,25 +61,66 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/signup',
-        builder: (context, state) => SignupScreen(role: state.uri.queryParameters['role']),
+        builder: (context, state) => const SignupScreen(),
       ),
-      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
 
       // Business Owner Shell
       ShellRoute(
         builder: (context, state, child) => BusinessShell(child: child),
         routes: [
-          GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
-          GoRoute(path: '/products', builder: (context, state) => const ProductsScreen()),
-          GoRoute(path: '/orders', builder: (context, state) => const OrdersScreen()),
-          GoRoute(path: '/customers', builder: (context, state) => const CustomersScreen()),
-          GoRoute(path: '/expenses', builder: (context, state) => const ExpensesScreen()),
-          GoRoute(path: '/analytics', builder: (context, state) => const AnalyticsScreen()),
-          GoRoute(path: '/pricing', builder: (context, state) => const PricingScreen()),
-          GoRoute(path: '/invoices', builder: (context, state) => const InvoicesScreen()),
-          GoRoute(path: '/learn', builder: (context, state) => const LearnScreen()),
-          GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
-          GoRoute(path: '/support', builder: (context, state) => const SupportScreen()),
+          GoRoute(
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/products',
+            builder: (context, state) => const ProductsScreen(),
+          ),
+          GoRoute(
+            path: '/orders',
+            builder: (context, state) => const OrdersScreen(),
+          ),
+          GoRoute(
+            path: '/customers',
+            builder: (context, state) => const CustomersScreen(),
+          ),
+          GoRoute(
+            path: '/expenses',
+            builder: (context, state) => const ExpensesScreen(),
+          ),
+          GoRoute(
+            path: '/analytics',
+            builder: (context, state) => const AnalyticsScreen(),
+          ),
+          GoRoute(
+            path: '/pricing',
+            builder: (context, state) => const PricingScreen(),
+          ),
+          GoRoute(
+            path: '/invoices',
+            builder: (context, state) => const InvoicesScreen(),
+          ),
+          GoRoute(
+            path: '/invoices/:id',
+            builder: (context, state) =>
+                InvoiceDetailScreen(orderId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/learn',
+            builder: (context, state) => const LearnScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/support',
+            builder: (context, state) => const SupportScreen(),
+          ),
         ],
       ),
 
@@ -86,16 +128,49 @@ GoRouter createRouter(AuthBloc authBloc) {
       ShellRoute(
         builder: (context, state, child) => CustomerShell(child: child),
         routes: [
-          GoRoute(path: '/store', builder: (context, state) => const CustomerHomeScreen()),
-          GoRoute(path: '/store/businesses', builder: (context, state) => const AllBusinessesScreen()),
-          GoRoute(path: '/store/business/:id', builder: (context, state) => BusinessStoreScreen(businessId: state.pathParameters['id']!)),
-          GoRoute(path: '/store/product/:id', builder: (context, state) => ProductDetailScreen(productId: state.pathParameters['id']!)),
-          GoRoute(path: '/store/cart', builder: (context, state) => const CartScreen()),
-          GoRoute(path: '/store/checkout', builder: (context, state) => const CheckoutScreen()),
-          GoRoute(path: '/store/orders', builder: (context, state) => const CustomerOrdersScreen()),
-          GoRoute(path: '/store/orders/:id', builder: (context, state) => OrderDetailScreen(orderId: state.pathParameters['id']!)),
-          GoRoute(path: '/store/favorites', builder: (context, state) => const FavoritesScreen()),
-          GoRoute(path: '/store/profile', builder: (context, state) => const CustomerProfileScreen()),
+          GoRoute(
+            path: '/store',
+            builder: (context, state) => const CustomerHomeScreen(),
+          ),
+          GoRoute(
+            path: '/store/businesses',
+            builder: (context, state) => const AllBusinessesScreen(),
+          ),
+          GoRoute(
+            path: '/store/business/:id',
+            builder: (context, state) =>
+                BusinessStoreScreen(businessId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/store/product/:id',
+            builder: (context, state) =>
+                ProductDetailScreen(productId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/store/cart',
+            builder: (context, state) => const CartScreen(),
+          ),
+          GoRoute(
+            path: '/store/checkout',
+            builder: (context, state) => const CheckoutScreen(),
+          ),
+          GoRoute(
+            path: '/store/orders',
+            builder: (context, state) => const CustomerOrdersScreen(),
+          ),
+          GoRoute(
+            path: '/store/orders/:id',
+            builder: (context, state) =>
+                OrderDetailScreen(orderId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/store/favorites',
+            builder: (context, state) => const FavoritesScreen(),
+          ),
+          GoRoute(
+            path: '/store/profile',
+            builder: (context, state) => const CustomerProfileScreen(),
+          ),
         ],
       ),
     ],

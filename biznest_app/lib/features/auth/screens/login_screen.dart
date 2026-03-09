@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../bloc/auth_bloc.dart';
@@ -18,7 +19,6 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  String _selectedRole = 'business';
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -88,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen>
         AuthLoginRequested(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          role: _selectedRole,
         ),
       );
     }
@@ -129,31 +128,20 @@ class _LoginScreenState extends State<LoginScreen>
                       constraints: const BoxConstraints(maxWidth: 420),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // Logo Section with Scale Animation
                           ScaleTransition(
                             scale: _scaleAnimation,
-                            child: Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                gradient: AppColors.primaryGradient,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary600.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                'BN',
-                                style: GoogleFonts.inter(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                alignment: Alignment.center,
+                                child: SvgPicture.asset(
+                                  'assets/images/logo.svg',
+                                  width: 86,
+                                  height: 86,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
                             ),
@@ -169,29 +157,13 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Sign in to manage your business',
+                            'Sign in to your account',
                             style: GoogleFonts.inter(
                               fontSize: 15,
                               color: AppColors.gray500,
                             ),
                           ),
                           const SizedBox(height: 32),
-
-                          // Role Toggle
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: AppColors.gray100,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              children: [
-                                _buildRoleTab('Business', 'business'),
-                                _buildRoleTab('Customer', 'customer'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
 
                           // Form Card
                           Container(
@@ -352,14 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () {
-                                  // Navigate based on role (pass in query param)
-                                  if (_selectedRole == 'customer') {
-                                    context.go('/signup?role=customer');
-                                  } else {
-                                    context.go('/signup?role=business');
-                                  }
-                                },
+                                onTap: () => context.go('/signup'),
                                 child: Text(
                                   'Sign Up',
                                   style: GoogleFonts.inter(
@@ -377,47 +342,6 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleTab(String label, String role) {
-    final isSelected = _selectedRole == role;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedRole = role;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            gradient: isSelected ? AppColors.primaryGradient : null,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary600.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.gray600,
               ),
             ),
           ),

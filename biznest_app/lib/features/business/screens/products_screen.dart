@@ -5,6 +5,7 @@ import '../../../core/utils/helpers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/services/api_service.dart';
+import 'add_product_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -47,6 +48,28 @@ class _ProductsScreenState extends State<ProductsScreen> {
       return name.contains(_searchQuery.toLowerCase()) ||
           category.contains(_searchQuery.toLowerCase());
     }).toList();
+  }
+
+  Future<void> _openAddProductScreen() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddProductScreen()),
+    );
+
+    if (created == true && mounted) {
+      _fetchProducts();
+    }
+  }
+
+  Future<void> _openEditProductScreen(Map<String, dynamic> product) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => AddProductScreen(product: product)),
+    );
+
+    if (updated == true && mounted) {
+      _fetchProducts();
+    }
   }
 
   void _showProductDialog([Map<String, dynamic>? product]) {
@@ -545,36 +568,55 @@ class _ProductsScreenState extends State<ProductsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Products',
-                    style: GoogleFonts.inter(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.gray900,
-                    ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 520;
+
+            final titleBlock = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Products',
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.gray900,
                   ),
-                  Text(
-                    '${_products.length} products total',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: AppColors.gray500,
-                    ),
+                ),
+                Text(
+                  '${_products.length} products total',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.gray500,
                   ),
-                ],
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: () => _showProductDialog(),
+                ),
+              ],
+            );
+
+            final actionButton = ElevatedButton.icon(
+              onPressed: _openAddProductScreen,
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Add Product'),
-            ),
-          ],
+            );
+
+            if (isCompact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  titleBlock,
+                  const SizedBox(height: 12),
+                  SizedBox(width: double.infinity, child: actionButton),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: titleBlock),
+                actionButton,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 20),
 
@@ -623,18 +665,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
         else
           LayoutBuilder(
             builder: (context, constraints) {
-              final crossCount = constraints.maxWidth > 900
-                  ? 3
-                  : (constraints.maxWidth > 500 ? 2 : 1);
-              final aspectRatio = crossCount == 1 ? 2.5 : 1.4;
+              final isCompact = constraints.maxWidth < 520;
+              final maxTileWidth = constraints.maxWidth > 1200
+                  ? 360.0
+                  : (constraints.maxWidth > 700 ? 320.0 : 420.0);
+              final tileHeight = isCompact ? 232.0 : 244.0;
+
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossCount,
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: maxTileWidth,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: aspectRatio,
+                  mainAxisExtent: tileHeight,
                 ),
                 itemCount: products.length,
                 itemBuilder: (context, index) =>
@@ -652,6 +696,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       product['costPrice'],
       product['sellingPrice'],
     );
+    final imageUrl = resolveProductImageUrl(product);
+    final imageProvider = resolveImageProvider(imageUrl);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -663,7 +709,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           Row(
             children: [
@@ -677,28 +723,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child:
-                      (product['image'] != null &&
-                          product['image'].toString().isNotEmpty)
-                      ? CachedNetworkImage(
-                          imageUrl: product['image'],
+                  child: imageProvider != null
+                      ? Image(
+                          image: imageProvider,
                           fit: BoxFit.cover,
                           width: 48,
                           height: 48,
-                          errorWidget: (context, url, error) => Icon(
+                          errorBuilder: (context, error, stackTrace) => Icon(
                             Icons.inventory_2_outlined,
                             color: AppColors.primary600,
                             size: 24,
-                          ),
-                          placeholder: (context, url) => Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.primary600,
-                              ),
-                            ),
                           ),
                         )
                       : Icon(
@@ -722,7 +756,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
               PopupMenuButton<String>(
                 onSelected: (v) {
-                  if (v == 'edit') _showProductDialog(product);
+                  if (v == 'edit') _openEditProductScreen(product);
                   if (v == 'delete') _deleteProduct(product['_id']);
                 },
                 itemBuilder: (ctx) => [
@@ -748,10 +782,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   fontSize: 11,
                   color: AppColors.gray600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -793,6 +829,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     fontWeight: FontWeight.w500,
                     color: stockStatus.text,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

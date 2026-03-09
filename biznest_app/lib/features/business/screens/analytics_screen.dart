@@ -115,7 +115,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final profit = _stats?['profit'];
     final expenses = _stats?['expenses'];
     final customers = _stats?['customers'];
-    final growth = (revenue?['growth'] ?? 0).toDouble();
+
+    // Safely convert growth to double
+    final growthValue = revenue?['growth'];
+    final growth = growthValue == null
+        ? 0.0
+        : growthValue is String
+        ? (double.tryParse(growthValue) ?? 0.0)
+        : (growthValue is num ? growthValue.toDouble() : 0.0);
 
     return LayoutBuilder(
       builder: (ctx, constraints) {
@@ -125,8 +132,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             'Monthly Revenue',
             formatCurrency(revenue?['monthly'] ?? 0),
             AppColors.gray900,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+            trailing: Wrap(
+              spacing: 4,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Icon(
                   growth > 0 ? Icons.trending_up : Icons.trending_down,
@@ -135,7 +144,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ? const Color(0xFF22C55E)
                       : AppColors.danger,
                 ),
-                const SizedBox(width: 4),
                 Text(
                   '${growth.abs().toStringAsFixed(0)}% vs last month',
                   style: GoogleFonts.inter(
@@ -187,8 +195,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           runSpacing: 12,
           children: cards
               .map(
-                (c) =>
-                    SizedBox(width: (constraints.maxWidth - 12) / 2, child: c),
+                (c) => SizedBox(
+                  width: constraints.maxWidth < 520
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - 12) / 2,
+                  child: c,
+                ),
               )
               .toList(),
         );
@@ -299,9 +311,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 minY: 0,
                 maxY:
                     _revenueData.fold<double>(0, (max, d) {
-                      final revenue = (d['revenue'] ?? 0).toDouble();
-                      final expenses = (d['expenses'] ?? 0).toDouble();
-                      final profit = (d['profit'] ?? 0).toDouble().abs();
+                      final revValue = d['revenue'];
+                      final revenue = revValue == null
+                          ? 0.0
+                          : revValue is String
+                          ? (double.tryParse(revValue) ?? 0.0)
+                          : (revValue is num ? revValue.toDouble() : 0.0);
+                      final expValue = d['expenses'];
+                      final expenses = expValue == null
+                          ? 0.0
+                          : expValue is String
+                          ? (double.tryParse(expValue) ?? 0.0)
+                          : (expValue is num ? expValue.toDouble() : 0.0);
+                      final profValue = d['profit'];
+                      final profit =
+                          (profValue == null
+                                  ? 0.0
+                                  : profValue is String
+                                  ? (double.tryParse(profValue) ?? 0.0)
+                                  : (profValue is num
+                                        ? profValue.toDouble()
+                                        : 0.0))
+                              .abs();
                       final maxValue = [
                         revenue,
                         expenses,
@@ -337,10 +368,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         if (idx < 0 || idx >= _revenueData.length) {
                           return const SizedBox();
                         }
+                        final monthValue = _revenueData[idx]['month'];
+                        final monthStr = monthValue == null
+                            ? ''
+                            : monthValue is String
+                            ? monthValue
+                            : monthValue.toString();
                         return Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            _revenueData[idx]['month'] ?? '',
+                            monthStr,
                             style: GoogleFonts.inter(
                               fontSize: 10,
                               color: AppColors.gray500,
@@ -375,11 +412,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 borderData: FlBorderData(show: false),
                 barGroups: List.generate(_revenueData.length, (i) {
                   final d = _revenueData[i];
+                  final revValue = d['revenue'];
+                  final revenue = revValue == null
+                      ? 0.0
+                      : revValue is String
+                      ? (double.tryParse(revValue) ?? 0.0)
+                      : (revValue is num ? revValue.toDouble() : 0.0);
+                  final expValue = d['expenses'];
+                  final expenses = expValue == null
+                      ? 0.0
+                      : expValue is String
+                      ? (double.tryParse(expValue) ?? 0.0)
+                      : (expValue is num ? expValue.toDouble() : 0.0);
+                  final profValue = d['profit'];
+                  final profit =
+                      (profValue == null
+                              ? 0.0
+                              : profValue is String
+                              ? (double.tryParse(profValue) ?? 0.0)
+                              : (profValue is num ? profValue.toDouble() : 0.0))
+                          .abs();
                   return BarChartGroupData(
                     x: i,
                     barRods: [
                       BarChartRodData(
-                        toY: (d['revenue'] ?? 0).toDouble(),
+                        toY: revenue,
                         color: const Color(0xFF22C55E),
                         width: 10,
                         borderRadius: const BorderRadius.vertical(
@@ -387,7 +444,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ),
                       BarChartRodData(
-                        toY: (d['expenses'] ?? 0).toDouble(),
+                        toY: expenses,
                         color: const Color(0xFFEF4444),
                         width: 10,
                         borderRadius: const BorderRadius.vertical(
@@ -395,7 +452,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ),
                       BarChartRodData(
-                        toY: (d['profit'] ?? 0).toDouble().abs(),
+                        toY: profit,
                         color: const Color(0xFF0EA5E9),
                         width: 10,
                         borderRadius: const BorderRadius.vertical(
@@ -473,8 +530,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           else
             ...List.generate(_topProducts.length, (i) {
               final p = _topProducts[i];
-              final maxQty = (_topProducts[0]['totalQuantity'] ?? 1).toDouble();
-              final qty = (p['totalQuantity'] ?? 0).toDouble();
+              final maxQtyVal = _topProducts[0]['totalQuantity'];
+              final maxQty = (maxQtyVal == null
+                  ? 1
+                  : (maxQtyVal is int
+                        ? maxQtyVal.toDouble()
+                        : (double.tryParse(maxQtyVal.toString()) ?? 1)));
+              final qtyVal = p['totalQuantity'];
+              final qty = (qtyVal == null
+                  ? 0
+                  : (qtyVal is int
+                        ? qtyVal.toDouble()
+                        : (double.tryParse(qtyVal.toString()) ?? 0)));
+              final productName = (p['name'] ?? '').toString();
+              final totalRevenue = p['totalRevenue'];
+              final totalQty = qtyVal ?? 0;
               return Padding(
                 padding: EdgeInsets.only(top: i > 0 ? 12 : 0),
                 child: Row(
@@ -503,7 +573,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            p['name'] ?? '',
+                            productName,
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w500,
                               color: AppColors.gray900,
@@ -527,11 +597,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${p['totalQuantity'] ?? 0} sold',
+                          '$totalQty sold',
                           style: GoogleFonts.inter(fontWeight: FontWeight.w500),
                         ),
                         Text(
-                          formatCurrency(p['totalRevenue'] ?? 0),
+                          formatCurrency(totalRevenue ?? 0),
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppColors.gray500,
@@ -550,7 +620,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget _healthScoreCard() {
     if (_healthScore == null) return const SizedBox();
-    final score = (_healthScore!['score'] ?? 0).toDouble();
+    final scoreValue = _healthScore!['score'];
+    final score = scoreValue == null
+        ? 0.0
+        : scoreValue is String
+        ? (double.tryParse(scoreValue) ?? 0.0)
+        : (scoreValue is num ? scoreValue.toDouble() : 0.0);
     final status = _healthScore!['status'] ?? '';
     final tips = _healthScore!['tips'] is List
         ? _healthScore!['tips'] as List
@@ -635,7 +710,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           // Breakdown
           if (breakdown.isNotEmpty) ...[
             ...breakdown.entries.map((e) {
-              final val = (e.value ?? 0).toDouble();
+              final valRaw = e.value;
+              final val = valRaw == null
+                  ? 0.0
+                  : valRaw is String
+                  ? (double.tryParse(valRaw) ?? 0.0)
+                  : (valRaw is num ? valRaw.toDouble() : 0.0);
+              final keyStr = (e.key ?? '').toString();
+              final displayLabel = keyStr
+                  .replaceAll('_', ' ')
+                  .replaceAllMapped(
+                    RegExp(r'^\w'),
+                    (m) => (m[0] ?? '').toUpperCase(),
+                  );
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Column(
@@ -645,12 +732,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          e.key
-                              .replaceAll('_', ' ')
-                              .replaceFirstMapped(
-                                RegExp(r'^\w'),
-                                (m) => m[0]!.toUpperCase(),
-                              ),
+                          displayLabel,
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppColors.gray600,

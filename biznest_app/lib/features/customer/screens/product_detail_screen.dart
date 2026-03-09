@@ -91,9 +91,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     final p = _product!;
-    // Handle single image (image field, not images array)
-    final imageUrl = p['image'] as String?;
-    final images = imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : [];
+    final imageUrl = resolveProductImageUrl(p);
+    final imageProvider = resolveImageProvider(imageUrl);
     final cart = context.read<CartCubit>();
     final inCart = cart.state.isInCart(widget.productId);
     // Get average rating from product
@@ -124,9 +123,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             borderRadius: BorderRadius.circular(20),
             child: AspectRatio(
               aspectRatio: 1.2,
-              child: images.isNotEmpty
-                  ? Image.network(
-                      images.first.toString(),
+              child: imageProvider != null
+                  ? Image(
+                      image: imageProvider,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           _placeholder(),

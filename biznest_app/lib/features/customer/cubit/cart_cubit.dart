@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../../core/utils/helpers.dart';
 
 // ==================== CART ITEM MODEL ====================
 class CartItem extends Equatable {
@@ -94,13 +95,7 @@ class CartCubit extends Cubit<CartState> {
     } else {
       // Handle both sellingPrice and price field names, prefer sellingPrice for backend API
       final price = product['sellingPrice'] ?? product['price'] ?? 0;
-      // Handle both image (single) and images (array) field names
-      String? image = product['image'];
-      if (image == null &&
-          product['images'] is List &&
-          (product['images'] as List).isNotEmpty) {
-        image = (product['images'] as List).first.toString();
-      }
+      final image = resolveProductImageUrl(product);
 
       final item = CartItem(
         productId: id,
@@ -186,13 +181,9 @@ class CartCubit extends Cubit<CartState> {
           item['price'] ??
           item['product']?['price'] ??
           0;
-      // Use image (single) field, or check images array
-      String? image = item['product']?['image'];
-      if (image == null &&
-          item['product']?['images'] is List &&
-          (item['product']?['images'] as List).isNotEmpty) {
-        image = (item['product']?['images'] as List).first.toString();
-      }
+      final image = resolveOrderItemImageUrl(
+        Map<String, dynamic>.from(item as Map),
+      );
 
       newItems.add(
         CartItem(

@@ -17,10 +17,30 @@ class _PricingScreenState extends State<PricingScreen> {
   double _desiredMargin = 30;
 
   static const _marginTips = [
-    (range: '0-20%', label: 'Low margin', color: Color(0xFFEF4444), tip: 'Consider if volume makes up for thin margins'),
-    (range: '20-40%', label: 'Standard margin', color: Color(0xFFEAB308), tip: 'Healthy for most retail businesses'),
-    (range: '40-60%', label: 'Good margin', color: Color(0xFF22C55E), tip: 'Great profitability, maintain quality'),
-    (range: '60%+', label: 'Premium margin', color: Color(0xFF3B82F6), tip: 'Ensure value justifies the premium'),
+    (
+      range: '0-20%',
+      label: 'Low margin',
+      color: Color(0xFFEF4444),
+      tip: 'Consider if volume makes up for thin margins',
+    ),
+    (
+      range: '20-40%',
+      label: 'Standard margin',
+      color: Color(0xFFEAB308),
+      tip: 'Healthy for most retail businesses',
+    ),
+    (
+      range: '40-60%',
+      label: 'Good margin',
+      color: Color(0xFF22C55E),
+      tip: 'Great profitability, maintain quality',
+    ),
+    (
+      range: '60%+',
+      label: 'Premium margin',
+      color: Color(0xFF3B82F6),
+      tip: 'Ensure value justifies the premium',
+    ),
   ];
 
   @override
@@ -35,7 +55,11 @@ class _PricingScreenState extends State<PricingScreen> {
     if (_mode == 'margin') {
       if (cost == 0) return (recommendedPrice: 0, profit: 0, margin: 0);
       final price = cost * (1 + _desiredMargin / 100);
-      return (recommendedPrice: price, profit: price - cost, margin: _desiredMargin);
+      return (
+        recommendedPrice: price,
+        profit: price - cost,
+        margin: _desiredMargin,
+      );
     } else {
       final sell = double.tryParse(_sellCtrl.text) ?? 0;
       if (cost == 0) return (recommendedPrice: 0, profit: 0, margin: 0);
@@ -75,18 +99,33 @@ class _PricingScreenState extends State<PricingScreen> {
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.calculate, size: 28, color: Colors.white),
+                    child: const Icon(
+                      Icons.calculate,
+                      size: 28,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Smart Pricing Calculator',
-                            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text(
+                          'Smart Pricing Calculator',
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                         const SizedBox(height: 4),
-                        Text('Find the perfect price for your products',
-                            style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
+                        Text(
+                          'Find the perfect price for your products',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -96,16 +135,7 @@ class _PricingScreenState extends State<PricingScreen> {
             const SizedBox(height: 20),
 
             // Mode toggle
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(color: AppColors.gray100, borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                children: [
-                  _modeTab('margin', 'Calculate Price from Margin'),
-                  _modeTab('price', 'Calculate Margin from Price'),
-                ],
-              ),
-            ),
+            _buildModeToggle(),
             const SizedBox(height: 20),
 
             // Calculator
@@ -116,18 +146,25 @@ class _PricingScreenState extends State<PricingScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.gray100),
               ),
-              child: LayoutBuilder(builder: (ctx, constraints) {
-                final isWide = constraints.maxWidth > 500;
-                final input = _inputSection();
-                final result = _resultSection();
-                return isWide
-                    ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Expanded(child: input),
-                        const SizedBox(width: 32),
-                        Expanded(child: result),
-                      ])
-                    : Column(children: [input, const SizedBox(height: 20), result]);
-              }),
+              child: LayoutBuilder(
+                builder: (ctx, constraints) {
+                  final isWide = constraints.maxWidth > 500;
+                  final input = _inputSection();
+                  final result = _resultSection();
+                  return isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: input),
+                            const SizedBox(width: 32),
+                            Expanded(child: result),
+                          ],
+                        )
+                      : Column(
+                          children: [input, const SizedBox(height: 20), result],
+                        );
+                },
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -139,28 +176,109 @@ class _PricingScreenState extends State<PricingScreen> {
     );
   }
 
-  Widget _modeTab(String mode, String label) {
-    final active = _mode == mode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _mode = mode),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: active ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: active ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4)] : null,
-          ),
-          child: Center(
-            child: Text(label,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: active ? AppColors.primary600 : AppColors.gray600,
-                )),
-          ),
+  Widget _buildModeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.gray100,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: SizedBox(
+        height: 54,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMargin = _mode == 'margin';
+            final segmentWidth = (constraints.maxWidth - 4) / 2;
+
+            return Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  left: isMargin ? 0 : segmentWidth,
+                  top: 0,
+                  width: segmentWidth,
+                  height: 54,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(11),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.07),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(11),
+                        onTap: () {
+                          if (_mode != 'margin') {
+                            setState(() => _mode = 'margin');
+                          }
+                        },
+                        child: _modeLabel(
+                          icon: Icons.sell_outlined,
+                          text: 'Price from Margin',
+                          active: isMargin,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(11),
+                        onTap: () {
+                          if (_mode != 'price') {
+                            setState(() => _mode = 'price');
+                          }
+                        },
+                        child: _modeLabel(
+                          icon: Icons.percent,
+                          text: 'Margin from Price',
+                          active: !isMargin,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _modeLabel({
+    required IconData icon,
+    required String text,
+    required bool active,
+  }) {
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: active ? AppColors.primary600 : AppColors.gray600,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: active ? AppColors.primary600 : AppColors.gray600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -173,12 +291,25 @@ class _PricingScreenState extends State<PricingScreen> {
           children: [
             Icon(Icons.currency_rupee, size: 18, color: AppColors.primary500),
             const SizedBox(width: 6),
-            Text('Enter Details', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.gray900)),
+            Text(
+              'Enter Details',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.gray900,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
-        Text('Cost Price (Your Purchase Price) *',
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.gray700)),
+        Text(
+          'Cost Price (Your Purchase Price) *',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppColors.gray700,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _costCtrl,
@@ -187,15 +318,30 @@ class _PricingScreenState extends State<PricingScreen> {
           decoration: InputDecoration(
             prefixText: '₹ ',
             hintText: '0',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.gray200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.gray200)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: AppColors.gray200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: AppColors.gray200),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
           ),
         ),
         const SizedBox(height: 16),
         if (_mode == 'margin') ...[
-          Text('Desired Profit Margin: ${_desiredMargin.toInt()}%',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.gray700)),
+          Text(
+            'Desired Profit Margin: ${_desiredMargin.toInt()}%',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.gray700,
+            ),
+          ),
           const SizedBox(height: 8),
           Slider(
             value: _desiredMargin,
@@ -208,14 +354,38 @@ class _PricingScreenState extends State<PricingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('5%', style: GoogleFonts.inter(fontSize: 11, color: AppColors.gray500)),
-              Text('50%', style: GoogleFonts.inter(fontSize: 11, color: AppColors.gray500)),
-              Text('100%', style: GoogleFonts.inter(fontSize: 11, color: AppColors.gray500)),
+              Text(
+                '5%',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AppColors.gray500,
+                ),
+              ),
+              Text(
+                '50%',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AppColors.gray500,
+                ),
+              ),
+              Text(
+                '100%',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: AppColors.gray500,
+                ),
+              ),
             ],
           ),
         ] else ...[
-          Text('Selling Price *',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.gray700)),
+          Text(
+            'Selling Price *',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.gray700,
+            ),
+          ),
           const SizedBox(height: 6),
           TextField(
             controller: _sellCtrl,
@@ -224,9 +394,18 @@ class _PricingScreenState extends State<PricingScreen> {
             decoration: InputDecoration(
               prefixText: '₹ ',
               hintText: '0',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.gray200)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.gray200)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.gray200),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.gray200),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
             ),
           ),
         ],
@@ -237,7 +416,8 @@ class _PricingScreenState extends State<PricingScreen> {
   Widget _resultSection() {
     final r = _result;
     final ml = _marginLevel;
-    final hasCost = _costCtrl.text.isNotEmpty && (double.tryParse(_costCtrl.text) ?? 0) > 0;
+    final hasCost =
+        _costCtrl.text.isNotEmpty && (double.tryParse(_costCtrl.text) ?? 0) > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +426,14 @@ class _PricingScreenState extends State<PricingScreen> {
           children: [
             const Icon(Icons.trending_up, size: 18, color: Color(0xFF22C55E)),
             const SizedBox(width: 6),
-            Text('Results', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.gray900)),
+            Text(
+              'Results',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.gray900,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -255,16 +442,27 @@ class _PricingScreenState extends State<PricingScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF22C55E), Color(0xFF16A34A)]),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Recommended Selling Price', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                Text(
+                  'Recommended Selling Price',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
+                ),
                 const SizedBox(height: 4),
-                Text(formatCurrency(r.recommendedPrice),
-                    style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
+                Text(
+                  formatCurrency(r.recommendedPrice),
+                  style: GoogleFonts.inter(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
@@ -274,13 +472,28 @@ class _PricingScreenState extends State<PricingScreen> {
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.gray50, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: AppColors.gray50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Column(
                   children: [
-                    Text('Profit per Unit', style: GoogleFonts.inter(fontSize: 12, color: AppColors.gray500)),
+                    Text(
+                      'Profit per Unit',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.gray500,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(formatCurrency(r.profit),
-                        style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: const Color(0xFF22C55E))),
+                    Text(
+                      formatCurrency(r.profit),
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF22C55E),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -289,13 +502,28 @@ class _PricingScreenState extends State<PricingScreen> {
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.gray50, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: AppColors.gray50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Column(
                   children: [
-                    Text('Profit Margin', style: GoogleFonts.inter(fontSize: 12, color: AppColors.gray500)),
+                    Text(
+                      'Profit Margin',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.gray500,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('${r.margin.toStringAsFixed(1)}%',
-                        style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary600)),
+                    Text(
+                      '${r.margin.toStringAsFixed(1)}%',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary600,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -319,10 +547,22 @@ class _PricingScreenState extends State<PricingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${ml.label} (${ml.range})',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: ml.color)),
+                      Text(
+                        '${ml.label} (${ml.range})',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: ml.color,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(ml.tip, style: GoogleFonts.inter(fontSize: 12, color: AppColors.gray600)),
+                      Text(
+                        ml.tip,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.gray600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -344,7 +584,9 @@ class _PricingScreenState extends State<PricingScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.primary50, const Color(0xFFEFF6FF)]),
+        gradient: LinearGradient(
+          colors: [AppColors.primary50, const Color(0xFFEFF6FF)],
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -352,26 +594,55 @@ class _PricingScreenState extends State<PricingScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb_outline, size: 18, color: AppColors.primary500),
+              Icon(
+                Icons.lightbulb_outline,
+                size: 18,
+                color: AppColors.primary500,
+              ),
               const SizedBox(width: 6),
-              Text('Pricing Tips', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.gray900)),
+              Text(
+                'Pricing Tips',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray900,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 16,
             runSpacing: 8,
-            children: tips.map((t) => SizedBox(
-              width: 300,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('•', style: TextStyle(color: AppColors.primary500, fontSize: 16)),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(t, style: GoogleFonts.inter(fontSize: 13, color: AppColors.gray600))),
-                ],
-              ),
-            )).toList(),
+            children: tips
+                .map(
+                  (t) => SizedBox(
+                    width: 300,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '•',
+                          style: TextStyle(
+                            color: AppColors.primary500,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            t,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: AppColors.gray600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),

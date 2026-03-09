@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     show Supabase, AuthException, AuthChangeEvent;
+import 'package:dio/dio.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/token_service.dart';
 
@@ -16,14 +17,9 @@ class AuthCheckRequested extends AuthEvent {}
 class AuthLoginRequested extends AuthEvent {
   final String email;
   final String password;
-  final String role;
-  AuthLoginRequested({
-    required this.email,
-    required this.password,
-    this.role = 'business',
-  });
+  AuthLoginRequested({required this.email, required this.password});
   @override
-  List<Object?> get props => [email, password, role];
+  List<Object?> get props => [email, password];
 }
 
 class AuthSignupRequested extends AuthEvent {
@@ -117,8 +113,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // First check if we have a JWT token from direct auth
       final hasJwt = await _tokenService.hasJwtToken();
       if (hasJwt) {
+        try {
+          final response = await _api.getMe();
+          final data = response.data;
+          emit(
+            AuthAuthenticated(
+              user: {
+                '_id': data['_id'],
+                'name': data['name'],
+                'email': data['email'],
+                'phone': data['phone'],
+              },
+              business: data['business'],
+              role: data['role'] ?? 'business',
+            ),
+          );
+          return;
+        } on DioException catch (e) {
+          // Token expired or server unreachable, clear and proceed
+          await _tokenService.clearJwtToken();
+          if (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.connectionError) {
+            // Server is unreachable, emit unauthenticated
+            emit(AuthUnauthenticated());
+            return;
+          }
+          rethrow;
+        }
+      }
+
+      // Then check Supabase session
+      final session = _supabase.auth.currentSession;
+      if (session == null) {
+        emit(AuthUnauthenticated());
+        return;
+      }
+
+      // Fetch user profile from our backend using Supabase token
+      try {
         final response = await _api.getMe();
         final data = response.data;
+
         emit(
           AuthAuthenticated(
             user: {
@@ -131,32 +167,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             role: data['role'] ?? 'business',
           ),
         );
-        return;
+      } on DioException catch (e) {
+        // If server is unreachable, still emit authenticated with Supabase user
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError) {
+          emit(
+            AuthAuthenticated(
+              user: {
+                '_id': session.user.id,
+                'name': session.user.userMetadata?['name'] ?? 'User',
+                'email': session.user.email ?? '',
+                'phone': session.user.userMetadata?['phone'],
+              },
+              role: session.user.userMetadata?['role'] ?? 'business',
+            ),
+          );
+          return;
+        }
+        rethrow;
       }
-
-      // Then check Supabase session
-      final session = _supabase.auth.currentSession;
-      if (session == null) {
-        emit(AuthUnauthenticated());
-        return;
-      }
-
-      // Fetch user profile from our backend using Supabase token
-      final response = await _api.getMe();
-      final data = response.data;
-
-      emit(
-        AuthAuthenticated(
-          user: {
-            '_id': data['_id'],
-            'name': data['name'],
-            'email': data['email'],
-            'phone': data['phone'],
-          },
-          business: data['business'],
-          role: data['role'] ?? 'business',
-        ),
-      );
     } catch (e) {
       emit(AuthUnauthenticated());
     }
@@ -173,7 +203,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final response = await _api.login({
           'email': event.email,
           'password': event.password,
-          'role': event.role,
         });
 
         final data = response.data;
@@ -191,11 +220,39 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               'phone': data['phone'],
             },
             business: data['business'],
-            role: data['role'] ?? event.role,
+            role: data['role'] ?? 'business',
           ),
         );
         return;
-      } catch (directAuthError) {
+      } on DioException catch (dioError) {
+        // Check for timeout errors specifically
+        if (dioError.type == DioExceptionType.connectionTimeout ||
+            dioError.type == DioExceptionType.receiveTimeout) {
+          emit(
+            AuthError(
+              'Login timeout: ${dioError.error ?? 'Request took too long. Check your connection or server status.'}',
+            ),
+          );
+          return;
+        }
+
+        if (dioError.type == DioExceptionType.connectionError) {
+          emit(
+            AuthError(
+              'Connection failed: Cannot reach server at 192.168.6.14:5000. Make sure:\n'
+              '1. Your device is on the same network\n'
+              '2. The server is running\n'
+              '3. The IP address is correct',
+            ),
+          );
+          return;
+        }
+
+        // For other API errors, try Supabase as fallback
+        if (dioError.response?.statusCode != 401) {
+          rethrow;
+        }
+
         // Direct auth failed, try Supabase
         try {
           final authResponse = await _supabase.auth.signInWithPassword(
@@ -211,7 +268,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           // Sync user with our backend and get profile
           final response = await _api.syncUser({
             'email': event.email,
-            'role': event.role,
             'supabaseId': authResponse.user!.id,
           });
 
@@ -226,7 +282,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 'phone': data['phone'],
               },
               business: data['business'],
-              role: data['role'] ?? event.role,
+              role: data['role'] ?? 'business',
             ),
           );
         } on AuthException catch (e) {
@@ -234,10 +290,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
     } catch (e) {
-      final msg = e.toString().contains('DioException')
-          ? 'Invalid email or password'
-          : e.toString();
-      emit(AuthError(msg));
+      String errorMsg = _getErrorMessage(e);
+      emit(AuthError(errorMsg));
     }
   }
 
@@ -276,7 +330,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         );
         return;
-      } catch (directAuthError) {
+      } on DioException catch (dioError) {
+        // Check for timeout errors specifically
+        if (dioError.type == DioExceptionType.connectionTimeout ||
+            dioError.type == DioExceptionType.receiveTimeout) {
+          emit(
+            AuthError(
+              'Signup timeout: ${dioError.error ?? 'Request took too long. Check your connection or server status.'}',
+            ),
+          );
+          return;
+        }
+
+        if (dioError.type == DioExceptionType.connectionError) {
+          emit(
+            AuthError(
+              'Connection failed: Cannot reach server at 192.168.6.14:5000. Make sure:\n'
+              '1. Your device is on the same network\n'
+              '2. The server is running\n'
+              '3. The IP address is correct',
+            ),
+          );
+          return;
+        }
+
+        // For other errors, try Supabase as fallback
+        if (dioError.response?.statusCode != 400 &&
+            dioError.response?.statusCode != 500 &&
+            dioError.response?.statusCode != null) {
+          rethrow;
+        }
+
         // Direct signup failed, try Supabase
         try {
           final authResponse = await _supabase.auth.signUp(
@@ -353,5 +437,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     }
+  }
+
+  /// Helper method to format error messages
+  String _getErrorMessage(dynamic error) {
+    if (error is DioException) {
+      if (error.type == DioExceptionType.connectionTimeout) {
+        return 'Connection timeout: Request took too long to respond. Please check your server connection.';
+      } else if (error.type == DioExceptionType.receiveTimeout) {
+        return 'Receive timeout: Server took too long to respond. Please try again.';
+      } else if (error.type == DioExceptionType.connectionError) {
+        return 'Network error: Cannot reach the server. Please check your internet connection and server status.';
+      } else if (error.response?.statusCode == 401) {
+        return 'Invalid email or password.';
+      } else if (error.response?.statusCode == 400) {
+        return error.response?.data['message'] ??
+            'Invalid request. Please check your input.';
+      } else if (error.response?.statusCode == 500) {
+        return 'Server error. Please try again later.';
+      }
+      return error.message ?? 'An error occurred. Please try again.';
+    }
+    return error.toString();
   }
 }

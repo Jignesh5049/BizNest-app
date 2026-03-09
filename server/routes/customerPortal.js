@@ -293,6 +293,18 @@ router.post('/orders', protect, customerOnly, async (req, res) => {
     try {
         const { businessId, items, deliveryAddress, notes, paymentMethod } = req.body;
 
+        const normalizePaymentMethod = (value) => {
+            const input = (value || 'cash').toString().trim().toLowerCase();
+            if (input === 'cod' || input === 'cash_on_delivery' || input === 'cash on delivery') {
+                return 'cash';
+            }
+
+            const allowed = new Set(['cash', 'upi', 'card', 'bank', 'other']);
+            return allowed.has(input) ? input : 'cash';
+        };
+
+        const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod);
+
         // Validate business exists
         const business = await Business.findById(businessId);
         if (!business) {
@@ -351,7 +363,7 @@ router.post('/orders', protect, customerOnly, async (req, res) => {
             totalCost,
             deliveryAddress,
             notes,
-            paymentMethod: paymentMethod || 'cash',
+            paymentMethod: normalizedPaymentMethod,
             status: 'pending',
             paymentStatus: 'unpaid'
         });

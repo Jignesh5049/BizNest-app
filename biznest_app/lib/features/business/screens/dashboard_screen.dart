@@ -104,22 +104,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => context.go('/products'),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Product'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => context.go('/orders'),
-                    icon: const Icon(Icons.note_add_outlined, size: 18),
-                    label: const Text('New Order'),
-                  ),
-                ],
-              ),
+
+              // Show key alerts directly below the welcome section.
+              _buildAlerts(),
             ],
           ),
           const SizedBox(height: 24),
@@ -127,9 +114,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Stats Grid
           _buildStatsGrid(),
           const SizedBox(height: 24),
-
-          // Alerts
-          _buildAlerts(),
 
           // Revenue Chart + Health Score
           LayoutBuilder(
@@ -239,32 +223,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final lowStock = _stats?['products']?['lowStock'] ?? 0;
     if (pendingOrders == 0 && lowStock == 0) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        children: [
-          if (pendingOrders > 0)
-            _buildAlertCard(
-              icon: Icons.warning_amber_outlined,
-              title: 'Pending Orders',
-              subtitle: '$pendingOrders orders awaiting action',
-              color: AppColors.warning,
-              bgColor: AppColors.warningLight,
-              onTap: () => context.go('/orders'),
-            ),
-          if (lowStock > 0) ...[
-            const SizedBox(height: 12),
-            _buildAlertCard(
-              icon: Icons.inventory_2_outlined,
-              title: 'Low Stock Alert',
-              subtitle: '$lowStock products running low',
-              color: AppColors.danger,
-              bgColor: AppColors.dangerLight,
-              onTap: () => context.go('/products'),
-            ),
-          ],
+    return Column(
+      children: [
+        if (pendingOrders > 0)
+          _buildAlertCard(
+            icon: Icons.warning_amber_outlined,
+            title: 'New Orders',
+            subtitle: '$pendingOrders orders awaiting action',
+            color: AppColors.warning,
+            bgColor: AppColors.warningLight,
+            onTap: () => context.go('/orders'),
+          ),
+        if (lowStock > 0) ...[
+          const SizedBox(height: 12),
+          _buildAlertCard(
+            icon: Icons.inventory_2_outlined,
+            title: 'Low Stock Alert',
+            subtitle: '$lowStock products running low',
+            color: AppColors.danger,
+            bgColor: AppColors.dangerLight,
+            onTap: () => context.go('/products'),
+          ),
         ],
-      ),
+      ],
     );
   }
 
@@ -318,13 +299,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-            Text(
-              'View →',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                color: color,
-                fontSize: 13,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'View',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.arrow_forward_ios_rounded, size: 14, color: color),
+              ],
             ),
           ],
         ),
@@ -344,29 +332,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 420;
+              final title = Text(
                 'Revenue Overview',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: AppColors.gray900,
                 ),
-              ),
-              GestureDetector(
-                onTap: () => context.go('/analytics'),
-                child: Text(
-                  'View Details →',
+              );
+
+              final action = TextButton.icon(
+                onPressed: () => context.go('/analytics'),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.primary600,
+                ),
+                label: Text(
+                  'View Details',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: AppColors.primary600,
                   ),
                 ),
-              ),
-            ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [title, const SizedBox(height: 6), action],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [title, action],
+              );
+            },
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -408,7 +419,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   if (value < 0) return const Text('');
                                   if (value >= 1000) {
                                     return Text(
-                                      '₹${(value / 1000).toStringAsFixed(0)}k',
+                                      'Rs ${(value / 1000).toStringAsFixed(0)}k',
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
                                         color: AppColors.gray400,
@@ -416,7 +427,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     );
                                   } else {
                                     return Text(
-                                      '₹${value.toStringAsFixed(0)}',
+                                      'Rs ${value.toStringAsFixed(0)}',
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
                                         color: AppColors.gray400,
@@ -624,29 +635,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 420;
+              final title = Text(
                 'Top Selling Products',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: AppColors.gray900,
                 ),
-              ),
-              GestureDetector(
-                onTap: () => context.go('/analytics'),
-                child: Text(
-                  'View All →',
+              );
+
+              final action = TextButton.icon(
+                onPressed: () => context.go('/analytics'),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.primary600,
+                ),
+                label: Text(
+                  'View All',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: AppColors.primary600,
                   ),
                 ),
-              ),
-            ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [title, const SizedBox(height: 6), action],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [title, action],
+              );
+            },
           ),
           const SizedBox(height: 16),
           if (_topProducts.isEmpty)

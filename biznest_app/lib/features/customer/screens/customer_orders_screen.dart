@@ -246,7 +246,10 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> {
                       );
                     }
                     final item = items[index];
-                    final imageUrl = (item['image'] ?? '').toString();
+                    final imageUrl = resolveOrderItemImageUrl(
+                      Map<String, dynamic>.from(item as Map),
+                    );
+                    final imageProvider = resolveImageProvider(imageUrl);
                     return Container(
                       width: 70,
                       margin: const EdgeInsets.only(right: 8),
@@ -257,9 +260,9 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(7),
-                        child: imageUrl.isNotEmpty
-                            ? Image.network(
-                                imageUrl,
+                        child: imageProvider != null
+                            ? Image(
+                                image: imageProvider,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Icon(

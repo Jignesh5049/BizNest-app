@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import 'sidebar.dart';
@@ -38,9 +39,7 @@ class _BusinessShellState extends State<BusinessShell> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  right: BorderSide(color: AppColors.gray200),
-                ),
+                border: Border(right: BorderSide(color: AppColors.gray200)),
               ),
               child: const AppSidebar(),
             ),
@@ -75,13 +74,23 @@ class _BusinessShellState extends State<BusinessShell> {
                             color: AppColors.gray600,
                           ),
                           const Spacer(),
-                          Text(
-                            'BizNest',
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.gray900,
-                            ),
+                          Row(
+                            children: [
+                              SvgPicture.asset(
+                                'assets/images/favicon.svg',
+                                width: 25,
+                                height: 25,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'BizNest',
+                                style: GoogleFonts.inter(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.gray900,
+                                ),
+                              ),
+                            ],
                           ),
                           const Spacer(),
                           const SizedBox(width: 48), // Balance the menu button

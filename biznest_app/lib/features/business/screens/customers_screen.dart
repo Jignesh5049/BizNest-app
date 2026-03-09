@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/helpers.dart';
+import 'add_customer_screen.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -67,6 +68,28 @@ class _CustomersScreenState extends State<CustomersScreen> {
           (c['phone'] ?? '').toString().contains(q) ||
           (c['email'] ?? '').toString().toLowerCase().contains(q);
     }).toList();
+  }
+
+  Future<void> _openAddCustomerScreen() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddCustomerScreen()),
+    );
+
+    if (created == true && mounted) {
+      _fetch();
+    }
+  }
+
+  Future<void> _openEditCustomerScreen(Map<String, dynamic> customer) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => AddCustomerScreen(customer: customer)),
+    );
+
+    if (updated == true && mounted) {
+      _fetch();
+    }
   }
 
   void _openForm([Map<String, dynamic>? customer]) {
@@ -238,7 +261,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
               ),
             ),
             ElevatedButton.icon(
-              onPressed: () => _openForm(),
+              onPressed: _openAddCustomerScreen,
               icon: const Icon(Icons.add, size: 20),
               label: const Text('Add Customer'),
               style: ElevatedButton.styleFrom(
@@ -458,7 +481,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 Icons.edit_outlined,
                 const Color(0xFFEFF6FF),
                 const Color(0xFF2563EB),
-                () => _openForm(c),
+                () => _openEditCustomerScreen(c),
               ),
               const SizedBox(width: 6),
               _iconBtn(
@@ -594,7 +617,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           size: 18,
                           color: const Color(0xFF2563EB),
                         ),
-                        onPressed: () => _openForm(c),
+                        onPressed: () => _openEditCustomerScreen(c),
                       ),
                       IconButton(
                         icon: Icon(

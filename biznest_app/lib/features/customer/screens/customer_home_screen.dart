@@ -382,13 +382,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 
   Widget _productCard(Map<String, dynamic> p) {
-    // Handle both single image (image field) and array format
-    final imageUrl =
-        p['image'] as String? ??
-        (p['images'] is List && (p['images'] as List).isNotEmpty
-            ? (p['images'] as List).first.toString()
-            : null);
-    final images = imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : [];
+    final imageUrl = resolveProductImageUrl(p);
+    final imageProvider = resolveImageProvider(imageUrl);
     final isFav = _favoriteIds.contains(p['_id']);
     final cart = context.read<CartCubit>();
     final inCart = cart.state.isInCart(p['_id']);
@@ -411,9 +406,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               ),
               child: AspectRatio(
                 aspectRatio: 1.2,
-                child: images.isNotEmpty
-                    ? Image.network(
-                        images.first.toString(),
+                child: imageProvider != null
+                    ? Image(
+                        image: imageProvider,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
                             _placeholderImage(),

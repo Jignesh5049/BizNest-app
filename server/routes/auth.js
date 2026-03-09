@@ -56,7 +56,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // @route   POST /api/auth/login
-// @desc    Login user
+// @desc    Login user - role is determined from database
 // @access  Public
 router.post('/login', async (req, res) => {
     try {
@@ -74,7 +74,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        // Get business or customer profile based on role
+        // Get business or customer profile based on user's stored role
         let business = null;
         let customerProfile = null;
 

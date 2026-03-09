@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/bloc/auth_bloc.dart';
 
@@ -11,15 +12,60 @@ class AppSidebar extends StatelessWidget {
   const AppSidebar({super.key, this.onClose});
 
   static final List<_NavItem> _navItems = [
-    _NavItem(path: '/dashboard', icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Dashboard'),
-    _NavItem(path: '/products', icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'Products'),
-    _NavItem(path: '/orders', icon: Icons.shopping_cart_outlined, activeIcon: Icons.shopping_cart, label: 'Orders'),
-    _NavItem(path: '/customers', icon: Icons.people_outlined, activeIcon: Icons.people, label: 'Customers'),
-    _NavItem(path: '/expenses', icon: Icons.currency_rupee_outlined, activeIcon: Icons.currency_rupee, label: 'Expenses'),
-    _NavItem(path: '/analytics', icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart, label: 'Analytics'),
-    _NavItem(path: '/pricing', icon: Icons.calculate_outlined, activeIcon: Icons.calculate, label: 'Pricing Tool'),
-    _NavItem(path: '/invoices', icon: Icons.description_outlined, activeIcon: Icons.description, label: 'Invoices'),
-    _NavItem(path: '/learn', icon: Icons.school_outlined, activeIcon: Icons.school, label: 'Learn'),
+    _NavItem(
+      path: '/dashboard',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      label: 'Dashboard',
+    ),
+    _NavItem(
+      path: '/products',
+      icon: Icons.inventory_2_outlined,
+      activeIcon: Icons.inventory_2,
+      label: 'Products',
+    ),
+    _NavItem(
+      path: '/orders',
+      icon: Icons.shopping_cart_outlined,
+      activeIcon: Icons.shopping_cart,
+      label: 'Orders',
+    ),
+    _NavItem(
+      path: '/customers',
+      icon: Icons.people_outlined,
+      activeIcon: Icons.people,
+      label: 'Customers',
+    ),
+    _NavItem(
+      path: '/expenses',
+      icon: Icons.currency_rupee_outlined,
+      activeIcon: Icons.currency_rupee,
+      label: 'Expenses',
+    ),
+    _NavItem(
+      path: '/analytics',
+      icon: Icons.bar_chart_outlined,
+      activeIcon: Icons.bar_chart,
+      label: 'Analytics',
+    ),
+    _NavItem(
+      path: '/pricing',
+      icon: Icons.calculate_outlined,
+      activeIcon: Icons.calculate,
+      label: 'Pricing Tool',
+    ),
+    _NavItem(
+      path: '/invoices',
+      icon: Icons.description_outlined,
+      activeIcon: Icons.description,
+      label: 'Invoices',
+    ),
+    _NavItem(
+      path: '/learn',
+      icon: Icons.school_outlined,
+      activeIcon: Icons.school,
+      label: 'Learn',
+    ),
   ];
 
   @override
@@ -39,20 +85,10 @@ class AppSidebar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    'BN',
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
+                SvgPicture.asset(
+                  'assets/images/favicon.svg',
+                  width: 30,
+                  height: 30,
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -89,12 +125,22 @@ class AppSidebar extends StatelessWidget {
               children: [
                 _buildNavLink(
                   context,
-                  _NavItem(path: '/support', icon: Icons.chat_outlined, activeIcon: Icons.chat, label: 'Support'),
+                  _NavItem(
+                    path: '/support',
+                    icon: Icons.chat_outlined,
+                    activeIcon: Icons.chat,
+                    label: 'Support',
+                  ),
                   currentLocation,
                 ),
                 _buildNavLink(
                   context,
-                  _NavItem(path: '/settings', icon: Icons.settings_outlined, activeIcon: Icons.settings, label: 'Settings'),
+                  _NavItem(
+                    path: '/settings',
+                    icon: Icons.settings_outlined,
+                    activeIcon: Icons.settings,
+                    label: 'Settings',
+                  ),
                   currentLocation,
                 ),
                 const SizedBox(height: 4),
@@ -107,7 +153,10 @@ class AppSidebar extends StatelessWidget {
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       child: Row(
                         children: [
                           Icon(Icons.logout, size: 20, color: AppColors.danger),
@@ -133,7 +182,11 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavLink(BuildContext context, _NavItem item, String currentLocation) {
+  Widget _buildNavLink(
+    BuildContext context,
+    _NavItem item,
+    String currentLocation,
+  ) {
     final isActive = currentLocation == item.path;
 
     return Padding(

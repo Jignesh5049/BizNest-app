@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../core/services/api_service.dart';
+import 'add_order_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -58,6 +59,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
       return customerName.contains(_searchQuery.toLowerCase()) ||
           id.contains(_searchQuery.toLowerCase());
     }).toList();
+  }
+
+  Future<void> _openAddOrderScreen() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddOrderScreen()),
+    );
+
+    if (created == true && mounted) {
+      _fetchOrders();
+    }
   }
 
   void _showCreateOrderDialog() {
@@ -443,7 +455,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: _showCreateOrderDialog,
+                onPressed: _openAddOrderScreen,
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('New Order'),
               ),
@@ -643,70 +655,98 @@ class _OrdersScreenState extends State<OrdersScreen> {
               style: GoogleFonts.inter(fontSize: 12, color: AppColors.gray400),
             ),
           const Divider(height: 20),
-          Row(
-            children: [
-              Text(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final actions = <Widget>[
+                if (order['status'] == 'pending')
+                  TextButton(
+                    onPressed: () => _updateStatus(order['_id'], 'confirmed'),
+                    child: Text(
+                      'Confirm',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.blue600,
+                      ),
+                    ),
+                  ),
+                if (order['status'] == 'confirmed')
+                  TextButton(
+                    onPressed: () => _updateStatus(order['_id'], 'completed'),
+                    child: Text(
+                      'Complete',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ),
+                if ((order['paymentStatus'] ?? '') != 'paid')
+                  TextButton(
+                    onPressed: () => _markPaid(order['_id']),
+                    child: Text(
+                      'Mark Paid',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary600,
+                      ),
+                    ),
+                  ),
+                if ((order['paymentStatus'] ?? '') == 'paid')
+                  TextButton.icon(
+                    onPressed: () => context.go('/invoices/${order['_id']}'),
+                    icon: Icon(
+                      Icons.description,
+                      size: 18,
+                      color: AppColors.primary600,
+                    ),
+                    label: Text(
+                      'Invoice',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary600,
+                      ),
+                    ),
+                  ),
+              ];
+
+              final totalText = Text(
                 'Total: ${formatCurrency(total)}',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary600,
                 ),
-              ),
-              const Spacer(),
-              // Status action buttons
-              if (order['status'] == 'pending')
-                TextButton(
-                  onPressed: () => _updateStatus(order['_id'], 'confirmed'),
-                  child: Text(
-                    'Confirm',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.blue600,
+              );
+
+              if (constraints.maxWidth < 380) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    totalText,
+                    if (actions.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 4, runSpacing: 4, children: actions),
+                    ],
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: totalText),
+                  if (actions.isNotEmpty)
+                    Flexible(
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: actions,
+                      ),
                     ),
-                  ),
-                ),
-              if (order['status'] == 'confirmed')
-                TextButton(
-                  onPressed: () => _updateStatus(order['_id'], 'completed'),
-                  child: Text(
-                    'Complete',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.success,
-                    ),
-                  ),
-                ),
-              // Payment action
-              if ((order['paymentStatus'] ?? '') != 'paid')
-                TextButton(
-                  onPressed: () => _markPaid(order['_id']),
-                  child: Text(
-                    'Mark Paid',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary600,
-                    ),
-                  ),
-                ),
-              // Invoice button for paid orders
-              if ((order['paymentStatus'] ?? '') == 'paid')
-                TextButton.icon(
-                  onPressed: () => context.go('/invoices'),
-                  icon: Icon(
-                    Icons.description,
-                    size: 18,
-                    color: AppColors.primary600,
-                  ),
-                  label: Text(
-                    'Invoice',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary600,
-                    ),
-                  ),
-                ),
-            ],
+                ],
+              );
+            },
           ),
         ],
       ),

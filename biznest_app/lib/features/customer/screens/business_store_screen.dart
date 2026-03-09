@@ -79,6 +79,44 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
         .toList();
   }
 
+  String _businessPhone(Map<String, dynamic> business) {
+    final contact = business['contact'];
+    if (contact is Map) {
+      final phone = contact['phone'];
+      if (phone != null && phone.toString().trim().isNotEmpty) {
+        return phone.toString();
+      }
+    }
+    if (contact is String && contact.trim().isNotEmpty) return contact;
+
+    final phone = business['phone'];
+    if (phone != null && phone.toString().trim().isNotEmpty) {
+      return phone.toString();
+    }
+    return '';
+  }
+
+  String _businessCity(Map<String, dynamic> business) {
+    final address = business['address'];
+    if (address is Map) {
+      final city = address['city'];
+      if (city != null && city.toString().trim().isNotEmpty) {
+        return city.toString();
+      }
+      final area = address['area'];
+      if (area != null && area.toString().trim().isNotEmpty) {
+        return area.toString();
+      }
+    }
+    if (address is String && address.trim().isNotEmpty) return address;
+
+    final city = business['city'];
+    if (city != null && city.toString().trim().isNotEmpty) {
+      return city.toString();
+    }
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
@@ -92,6 +130,8 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
     }
 
     final biz = _business!;
+    final phone = _businessPhone(biz);
+    final city = _businessCity(biz);
     final filtered = _filtered;
 
     return SingleChildScrollView(
@@ -157,7 +197,7 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
                   spacing: 16,
                   runSpacing: 8,
                   children: [
-                    if ((biz['contact']?['phone'] ?? '').toString().isNotEmpty)
+                    if (phone.isNotEmpty)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -168,7 +208,7 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            (biz['contact']?['phone'] ?? '').toString(),
+                            phone,
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               color: Colors.white70,
@@ -176,7 +216,7 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
                           ),
                         ],
                       ),
-                    if ((biz['address']?['city'] ?? '').toString().isNotEmpty)
+                    if (city.isNotEmpty)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -187,7 +227,7 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            (biz['address']?['city'] ?? '').toString(),
+                            city,
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               color: Colors.white70,
@@ -286,13 +326,8 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
   }
 
   Widget _productCard(Map<String, dynamic> p) {
-    // Handle both single image (image field) and array format
-    final imageUrl =
-        p['image'] as String? ??
-        (p['images'] is List && (p['images'] as List).isNotEmpty
-            ? (p['images'] as List).first.toString()
-            : null);
-    final images = imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : [];
+    final imageUrl = resolveProductImageUrl(p);
+    final imageProvider = resolveImageProvider(imageUrl);
     final isFav = _favoriteIds.contains(p['_id']);
     final cart = context.read<CartCubit>();
     final inCart = cart.state.isInCart(p['_id']);
@@ -314,9 +349,9 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
               ),
               child: AspectRatio(
                 aspectRatio: 1.2,
-                child: images.isNotEmpty
-                    ? Image.network(
-                        images.first.toString(),
+                child: imageProvider != null
+                    ? Image(
+                        image: imageProvider,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: AppColors.gray100,

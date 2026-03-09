@@ -12,8 +12,9 @@ class ApiService {
   late final Dio _dio;
   final _tokenService = TokenService();
 
-  // TODO: Change this to your computer's local IP when using a physical device
-  static const String _serverIp = '192.168.6.16';
+  // Computer's LAN IP - Make sure this matches your actual LAN IP
+  // Run 'ipconfig' on Windows to find IPv4 Address of your Wi-Fi adapter
+  static const String _serverIp = '192.168.6.14';
 
   static String get _baseUrl {
     if (kIsWeb) {
@@ -31,8 +32,8 @@ class ApiService {
     _dio = Dio(
       BaseOptions(
         baseUrl: _baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -56,10 +57,47 @@ class ApiService {
           return handler.next(options);
         },
         onError: (error, handler) {
+          // Handle 401 Unauthorized
           if (error.response?.statusCode == 401) {
             _tokenService.clearJwtToken();
             Supabase.instance.client.auth.signOut();
           }
+
+          // Enhance timeout error messages
+          if (error.type == DioExceptionType.connectionTimeout) {
+            return handler.reject(
+              DioException(
+                requestOptions: error.requestOptions,
+                error:
+                    'Connection timeout. Make sure the server is running and accessible.',
+                type: error.type,
+              ),
+            );
+          }
+
+          if (error.type == DioExceptionType.receiveTimeout) {
+            return handler.reject(
+              DioException(
+                requestOptions: error.requestOptions,
+                error:
+                    'Request timeout. Server took too long to respond. Check your network connection.',
+                type: error.type,
+              ),
+            );
+          }
+
+          // Handle no internet connection
+          if (error.type == DioExceptionType.connectionError) {
+            return handler.reject(
+              DioException(
+                requestOptions: error.requestOptions,
+                error:
+                    'Connection failed. Check if server at 192.168.6.14:5000 is reachable.',
+                type: error.type,
+              ),
+            );
+          }
+
           return handler.next(error);
         },
       ),

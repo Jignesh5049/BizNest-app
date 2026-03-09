@@ -19,6 +19,27 @@ class _AllBusinessesScreenState extends State<AllBusinessesScreen> {
   String _search = '';
   String _category = 'all';
 
+  String _businessCity(Map<String, dynamic> business) {
+    final address = business['address'];
+    if (address is Map) {
+      final city = address['city'];
+      if (city != null && city.toString().trim().isNotEmpty) {
+        return city.toString();
+      }
+      final area = address['area'];
+      if (area != null && area.toString().trim().isNotEmpty) {
+        return area.toString();
+      }
+    }
+    if (address is String && address.trim().isNotEmpty) return address;
+
+    final city = business['city'];
+    if (city != null && city.toString().trim().isNotEmpty) {
+      return city.toString();
+    }
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -158,6 +179,7 @@ class _AllBusinessesScreenState extends State<AllBusinessesScreen> {
   }
 
   Widget _bizCard(Map<String, dynamic> b) {
+    final city = _businessCity(b);
     return GestureDetector(
       onTap: () => context.go('/store/business/${b['_id']}'),
       child: Container(
@@ -203,7 +225,7 @@ class _AllBusinessesScreenState extends State<AllBusinessesScreen> {
                       color: AppColors.gray500,
                     ),
                   ),
-                  if ((b['address']?['city'] ?? '').toString().isNotEmpty) ...[
+                  if (city.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -214,7 +236,7 @@ class _AllBusinessesScreenState extends State<AllBusinessesScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          (b['address']?['city'] ?? '').toString(),
+                          city,
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppColors.gray500,

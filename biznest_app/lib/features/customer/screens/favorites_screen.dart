@@ -125,13 +125,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Widget _card(Map<String, dynamic> p) {
-    // Handle both single image (image field) and array format
-    final imageUrl =
-        p['image'] as String? ??
-        (p['images'] is List && (p['images'] as List).isNotEmpty
-            ? (p['images'] as List).first.toString()
-            : null);
-    final images = imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : [];
+    final imageUrl = resolveProductImageUrl(p);
+    final imageProvider = resolveImageProvider(imageUrl);
     final cart = context.read<CartCubit>();
     final inCart = cart.state.isInCart(p['_id'] ?? '');
 
@@ -152,9 +147,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
               child: AspectRatio(
                 aspectRatio: 1.2,
-                child: images.isNotEmpty
-                    ? Image.network(
-                        images.first.toString(),
+                child: imageProvider != null
+                    ? Image(
+                        image: imageProvider,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: AppColors.gray100,

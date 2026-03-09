@@ -337,7 +337,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       i['product']?['sellingPrice'] ??
                       i['product']?['price'] ??
                       0;
-                  final imageUrl = (i['image'] ?? '').toString();
+                  final imageUrl = resolveOrderItemImageUrl(i);
+                  final imageProvider = resolveImageProvider(imageUrl);
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -360,9 +361,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(7),
-                            child: imageUrl.isNotEmpty
-                                ? Image.network(
-                                    imageUrl,
+                            child: imageProvider != null
+                                ? Image(
+                                    image: imageProvider,
                                     fit: BoxFit.cover,
                                     errorBuilder:
                                         (context, error, stackTrace) => Icon(

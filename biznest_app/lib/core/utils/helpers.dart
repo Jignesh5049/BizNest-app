@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import '../theme/app_colors.dart';
 
 /// Format currency in Indian Rupees
@@ -107,3 +112,163 @@ const List<({String value, String label})> businessCategories = [
   (value: 'consulting', label: 'Consulting'),
   (value: 'other', label: 'Other'),
 ];
+
+/// Resolve image URLs for web/emulator/physical devices.
+String resolveImageUrl(String? rawUrl) {
+  var input = (rawUrl ?? '').trim();
+  if (input.isEmpty) return '';
+
+  // Normalize slashes from legacy/windows style paths.
+  input = input.replaceAll('\\', '/');
+
+  const serverIp = '192.168.6.16';
+  final origin = kIsWeb
+      ? 'http://localhost:5000'
+      : (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS
+            ? 'http://$serverIp:5000'
+            : 'http://localhost:5000');
+
+  final localhostOrigin = 'http://localhost:5000';
+  final loopbackOrigin = 'http://127.0.0.1:5000';
+  final emulatorOrigin = 'http://10.0.2.2:5000';
+
+  // Already-displayable non-http sources.
+  if (input.startsWith('data:') || input.startsWith('blob:')) return input;
+
+  // Handle protocol-relative and bare website URLs.
+  if (input.startsWith('//')) return 'https:$input';
+  if (input.startsWith('www.')) return 'https://$input';
+
+  // Handle malformed protocol variants like `http//example.com/img.jpg`.
+  if (input.startsWith('http//')) {
+    input = input.replaceFirst('http//', 'http://');
+  } else if (input.startsWith('https//')) {
+    input = input.replaceFirst('https//', 'https://');
+  }
+
+  // Handle protocol-less domain URLs like `cdn.site.com/image.jpg`.
+  final looksLikeDomainPath = RegExp(
+    r'^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+([/:?].*)?$',
+  ).hasMatch(input);
+  if (!input.startsWith('/') &&
+      !input.startsWith('uploads/') &&
+      looksLikeDomainPath &&
+      !input.startsWith('http://') &&
+      !input.startsWith('https://')) {
+    input = 'https://$input';
+  }
+
+  // Handle malformed localhost strings without scheme.
+  if (input.startsWith('localhost:') ||
+      input.startsWith('127.0.0.1:') ||
+      input.startsWith('10.0.2.2:')) {
+    input = 'http://$input';
+  }
+
+  // Legacy storage may keep just uploads path in different forms.
+  if (input.startsWith('uploads/')) {
+    input = '/$input';
+  }
+
+  if (input.startsWith('http://') || input.startsWith('https://')) {
+    // Encode unsafe characters (spaces, etc.) in legacy URLs.
+    input = Uri.encodeFull(input);
+
+    final uri = Uri.tryParse(input);
+
+    // If URL is invalid after parse, return as-is so caller can handle fallback UI.
+    if (uri == null || uri.host.isEmpty) return input;
+
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
+      final isLocalHost =
+          uri.host == 'localhost' ||
+          uri.host == '127.0.0.1' ||
+          uri.host == '10.0.2.2';
+      if (isLocalHost) {
+        return input
+            .replaceFirst(localhostOrigin, origin)
+            .replaceFirst(loopbackOrigin, origin)
+            .replaceFirst(emulatorOrigin, origin);
+      }
+    }
+
+    return input;
+  }
+
+  if (input.startsWith('/')) return '$origin$input';
+  return '$origin/$input';
+}
+
+String resolveProductImageUrl(Map<String, dynamic> product) {
+  final image =
+      product['image'] ??
+      product['imageUrl'] ??
+      product['thumbnail'] ??
+      product['photo'] ??
+      product['productImage'] ??
+      (product['media'] is Map ? product['media']['url'] : null) ??
+      (product['image'] is Map ? product['image']['url'] : null);
+
+  if (image is String && image.trim().isNotEmpty) {
+    return resolveImageUrl(image);
+  }
+
+  final images = product['images'];
+  if (images is List && images.isNotEmpty) {
+    final first = images.first;
+    if (first is String && first.trim().isNotEmpty) {
+      return resolveImageUrl(first);
+    }
+    if (first is Map) {
+      final nested =
+          first['url'] ?? first['src'] ?? first['secure_url'] ?? first['image'];
+      if (nested is String && nested.trim().isNotEmpty) {
+        return resolveImageUrl(nested);
+      }
+    }
+  }
+
+  return '';
+}
+
+String resolveOrderItemImageUrl(Map<String, dynamic> item) {
+  final direct =
+      item['image'] ??
+      item['imageUrl'] ??
+      item['thumbnail'] ??
+      (item['product'] is Map
+          ? resolveProductImageUrl(Map<String, dynamic>.from(item['product']))
+          : '');
+
+  if (direct is String && direct.trim().isNotEmpty) {
+    return resolveImageUrl(direct);
+  }
+
+  return '';
+}
+
+Uint8List? decodeBase64ImageBytes(String? rawUrl) {
+  final input = (rawUrl ?? '').trim();
+  if (!input.startsWith('data:image')) return null;
+
+  final commaIndex = input.indexOf(',');
+  if (commaIndex == -1 || commaIndex >= input.length - 1) return null;
+
+  try {
+    return base64Decode(input.substring(commaIndex + 1));
+  } catch (_) {
+    return null;
+  }
+}
+
+ImageProvider<Object>? resolveImageProvider(String? rawUrl) {
+  final bytes = decodeBase64ImageBytes(rawUrl);
+  if (bytes != null && bytes.isNotEmpty) return MemoryImage(bytes);
+
+  final url = resolveImageUrl(rawUrl);
+  if (url.isEmpty || url.startsWith('data:')) return null;
+  return NetworkImage(url);
+}
