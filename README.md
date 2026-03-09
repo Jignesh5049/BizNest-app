@@ -1,312 +1,483 @@
-﻿BizNest
-=======
+# BizNest Mobile
 
-BizNest is a business enablement platform for small and home-based businesses. Manage products, orders, customers, and expenses in one place, and offer customers a modern storefront with ratings, reviews, and support.
+<div align="center">
 
-Features
---------
-Core
-- Dashboard with revenue, orders, profit, and health score
-- Product management with pricing, stock, categories, and images
-- Order management with status, payment status, and invoices
-- Customer CRM with profiles and order history
-- Expense tracking and analytics
-- Role-based access for business owners and customers
+**A comprehensive business management platform for small and home-based businesses**
 
-Customer Portal
-- Business discovery and storefront browsing
-- Product favorites, cart, and checkout
-- Order tracking with reorder
-- Product reviews and ratings (1-5 stars) after completed orders
-- Support requests for completed orders and admin replies in customer settings
+Built with Flutter � Powered by Node.js & MongoDB
 
-Admin Tools	
-- Support and feedback inbox with replies
-- Ratings visible in product list
-- Grid/list view for customers, products, and orders
+</div>
 
-Tech Stack
----------
-Frontend
-- React (Vite)
-- Tailwind CSS
-- React Router v6
-- Axios
+---
 
-Backend
-- Node.js
-- Express.js
-- MongoDB (Mongoose)
-- JWT authentication
+## ?? Overview
 
-Design, UI, and Animation
--------------------------
-Design System
-- Nature-inspired green palette defined in Tailwind theme tokens (primary and accent emerald/forest greens)
-- Inter typography with medium-heavy emphasis for headings and CTAs
-- Rounded geometry (rounded-xl/2xl), soft shadows, and light-gray surfaces for depth
+BizNest is a full-featured mobile application that empowers small businesses to manage their operations efficiently. From inventory and orders to customer relationships and analytics, BizNest provides an all-in-one solution for modern entrepreneurs.
 
-UI Patterns
-- Reusable UI classes in [client/src/index.css](client/src/index.css) (buttons, cards, inputs, badges, stat cards)
-- Gradient CTAs and hover elevation on cards for emphasis
-- Sidebar navigation with active states and subtle hover feedback
-- Custom scrollbar styling for a cleaner dashboard feel
+## ? Features
 
-Animation & Motion
-- Page-level fade-in animation for major routes (`animate-fadeIn`)
-- Subtle pulse for attention/empty/loading states (`animate-pulse-subtle`)
-- Hover transitions: elevation, translate-y, and shadow lift across cards and buttons
-- Spinners for async loading in protected routes and data-heavy pages
+### ?? Business Management
+- **Dashboard Analytics** - Real-time revenue tracking, order metrics, profit analysis, and business health scores
+- **Product Management** - Complete inventory control with pricing, stock levels, categories, and image uploads
+- **Order Processing** - Streamlined order management with status tracking, payment monitoring, and invoice generation
+- **Customer CRM** - Comprehensive customer profiles with order history and relationship tracking
+- **Expense Tracking** - Detailed expense recording with category-based analytics and reporting
 
-Project Structure
------------------
+### ??? Customer Portal
+- **Business Discovery** - Browse and explore multiple businesses and their offerings
+- **Product Catalog** - Rich product listings with images, descriptions, and pricing
+- **Shopping Cart & Checkout** - Seamless purchasing experience with order confirmation
+- **Order Tracking** - Real-time order status updates with reorder functionality
+- **Reviews & Ratings** - 5-star rating system with verified purchase reviews
+- **Customer Support** - Integrated support ticket system with admin response tracking
+
+### ?? Security & Access Control
+- JWT-based authentication with secure token management
+- Role-based access control (RBAC) for business owners and customers
+- Secure data storage using Flutter Secure Storage
+- Supabase integration for enhanced authentication options
+
+## ??? Tech Stack
+
+### Mobile Application
+| Technology | Purpose |
+|-----------|---------|
+| **Flutter & Dart** | Cross-platform mobile development |
+| **flutter_bloc** | State management with BLoC pattern |
+| **go_router** | Declarative routing and navigation |
+| **dio** | HTTP client for API communication |
+| **fl_chart** | Interactive charts and data visualization |
+| **supabase_flutter** | Authentication and backend services |
+| **google_fonts** | Typography and custom fonts |
+| **image_picker** | Camera and gallery access for uploads |
+| **flutter_secure_storage** | Encrypted local data storage |
+
+### Backend API
+| Technology | Purpose |
+|-----------|---------|
+| **Node.js & Express.js** | RESTful API server |
+| **MongoDB & Mongoose** | Database and ODM |
+| **JWT** | Authentication and authorization |
+| **Multer** | File upload handling |
+| **bcryptjs** | Password hashing and security |
+
+## ?? Design System
+
+### Visual Identity
+- **Color Palette** - Nature-inspired green theme with emerald and forest tones for trust and growth
+- **Typography** - Google Fonts integration with medium-heavy emphasis for clarity and hierarchy
+- **Layout** - Rounded corners (16-24px), soft shadows, and elevated surfaces for modern depth
+
+### UI/UX Patterns
+- Custom reusable widgets for consistency across the application
+- Responsive grid and list views with smooth transitions
+- Bottom navigation with intuitive iconography
+- Pull-to-refresh and infinite scroll for data-heavy screens
+- Loading states with shimmer effects and progress indicators
+
+## ?? Project Structure
+
 ```
-Biznest_App/
-â”œâ”€â”€ biznest_app/              Flutter/Dart mobile app
-â”‚   â”œâ”€â”€ lib/                  Application source code
-â”‚   â”‚   â”œâ”€â”€ main.dart         Entry point
-â”‚   â”‚   â”œâ”€â”€ core/             Core utilities and constants
-â”‚   â”‚   â””â”€â”€ features/         Feature modules
-â”‚   â”œâ”€â”€ android/              Android build configuration
-â”‚   â”œâ”€â”€ web/                  Web build configuration
-â”‚   â”œâ”€â”€ windows/              Windows build configuration
-â”‚   â”œâ”€â”€ assets/               App assets and images
-â”‚   â””â”€â”€ pubspec.yaml          Dart/Flutter dependencies
-â”‚
-â”œâ”€â”€ client/                   React frontend
-â”‚   â”œâ”€â”€ src/
-â”‚   â”‚   â”œâ”€â”€ components/       Reusable React components
-â”‚   â”‚   â”œâ”€â”€ pages/            Page components
-â”‚   â”‚   â”œâ”€â”€ context/          React context for state management
-â”‚   â”‚   â”œâ”€â”€ services/         API service calls
-â”‚   â”‚   â”œâ”€â”€ utils/            Utility functions
-â”‚   â”‚   â”œâ”€â”€ assets/           Images and static files
-â”‚   â”‚   â”œâ”€â”€ App.jsx           Main app component
-â”‚   â”‚   â””â”€â”€ main.jsx          React entry point
-â”‚   â”œâ”€â”€ public/               Static files
-â”‚   â”œâ”€â”€ index.html            HTML template
-â”‚   â”œâ”€â”€ vite.config.js        Vite configuration
-â”‚   â””â”€â”€ package.json          Dependencies
-â”‚
-â”œâ”€â”€ server/                   Express.js backend
-â”‚   â”œâ”€â”€ models/               MongoDB data models
-â”‚   â”‚   â”œâ”€â”€ User.js
-â”‚   â”‚   â”œâ”€â”€ Business.js
-â”‚   â”‚   â”œâ”€â”€ Product.js
-â”‚   â”‚   â”œâ”€â”€ Order.js
-â”‚   â”‚   â”œâ”€â”€ Customer.js
-â”‚   â”‚   â”œâ”€â”€ Expense.js
-â”‚   â”‚   â”œâ”€â”€ Review.js
-â”‚   â”‚   â””â”€â”€ SupportTicket.js
-â”‚   â”œâ”€â”€ routes/               API route handlers
-â”‚   â”‚   â”œâ”€â”€ auth.js           Authentication
-â”‚   â”‚   â”œâ”€â”€ business.js       Business management
-â”‚   â”‚   â”œâ”€â”€ products.js       Product management
-â”‚   â”‚   â”œâ”€â”€ orders.js         Order management
-â”‚   â”‚   â”œâ”€â”€ customers.js      Customer management
-â”‚   â”‚   â”œâ”€â”€ expenses.js       Expense tracking
-â”‚   â”‚   â”œâ”€â”€ analytics.js      Analytics endpoints
-â”‚   â”‚   â”œâ”€â”€ customerPortal.js Customer storefront
-â”‚   â”‚   â”œâ”€â”€ support.js        Support tickets
-â”‚   â”‚   â””â”€â”€ uploads.js        File uploads
-â”‚   â”œâ”€â”€ middleware/           Custom middleware
-â”‚   â”‚   â””â”€â”€ auth.js           JWT authentication
-â”‚   â”œâ”€â”€ config/               Configuration files
-â”‚   â”‚   â””â”€â”€ db.js             MongoDB connection
-â”‚   â”œâ”€â”€ uploads/              Uploaded files storage
-â”‚   â”œâ”€â”€ server.js             Express server entry
-â”‚   â”œâ”€â”€ seed.js               Database seeding script
-â”‚   â””â”€â”€ package.json          Dependencies
-â”‚
-â””â”€â”€ README.md                 This file
+BizNest_App/
+�
++-- biznest_app/                    # Flutter Mobile Application
+�   +-- lib/
+�   �   +-- main.dart              # Application entry point
+�   �   +-- core/                  # Core functionality
+�   �   �   +-- services/          # API, authentication, storage services
+�   �   �   +-- utils/             # Helper functions and utilities
+�   �   �   +-- widgets/           # Shared UI components
+�   �   +-- features/              # Feature-based modules
+�   �       +-- auth/              # Authentication & onboarding
+�   �       +-- business/          # Business management features
+�   �       +-- customer/          # Customer-facing features
+�   +-- android/                   # Android-specific configuration
+�   +-- assets/                    # Images and static resources
+�   �   +-- images/                # Application images
+�   +-- pubspec.yaml               # Flutter dependencies
+�   +-- README.md                  # Mobile app documentation
+�
++-- server/                        # Node.js Backend API
+�   +-- models/                    # MongoDB data schemas
+�   �   +-- User.js               # User authentication model
+�   �   +-- Business.js           # Business profile model
+�   �   +-- Product.js            # Product catalog model
+�   �   +-- Order.js              # Order management model
+�   �   +-- Customer.js           # Customer data model
+�   �   +-- Expense.js            # Expense tracking model
+�   �   +-- Review.js             # Product reviews model
+�   �   +-- SupportTicket.js      # Support system model
+�   +-- routes/                    # API route handlers
+�   �   +-- auth.js               # Authentication endpoints
+�   �   +-- business.js           # Business management APIs
+�   �   +-- products.js           # Product CRUD operations
+�   �   +-- orders.js             # Order processing APIs
+�   �   +-- customers.js          # Customer management APIs
+�   �   +-- expenses.js           # Expense tracking APIs
+�   �   +-- analytics.js          # Analytics & reporting APIs
+�   �   +-- customerPortal.js     # Customer storefront APIs
+�   �   +-- support.js            # Support ticket APIs
+�   �   +-- reviews.js            # Review management APIs
+�   �   +-- uploads.js            # File upload handlers
+�   +-- middleware/                # Express middleware
+�   �   +-- auth.js               # JWT authentication middleware
+�   +-- config/                    # Configuration files
+�   �   +-- db.js                 # MongoDB connection setup
+�   +-- scripts/                   # Utility scripts
+�   +-- uploads/                   # File storage directory
+�   +-- server.js                 # Express server entry point
+�   +-- seed.js                   # Database seeding script
+�   +-- package.json              # Node.js dependencies
+�
++-- .env.example                   # Environment variables template
++-- .gitignore                     # Git ignore rules
++-- README.md                      # Project documentation (this file)
 ```
 
-Installation & Setup
---------------------
+---
+
+## ?? Getting Started
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (local or Atlas)
-- npm or yarn package manager
 
-### Backend Setup
-1. Navigate to the server directory:
-   ```
-   cd server
+Before running this project, ensure you have the following installed:
+
+- **Flutter SDK** (3.0.0 or higher) - [Installation Guide](https://flutter.dev/docs/get-started/install)
+- **Dart SDK** (included with Flutter)
+- **Android Studio** or **Xcode** (for mobile development)
+- **Node.js** (v16 or higher) - [Download](https://nodejs.org/)
+- **MongoDB** (local installation or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- **Git** - [Download](https://git-scm.com/downloads)
+
+### Installation
+
+#### 1?? Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/biznest-app.git
+cd biznest-app
+```
+
+#### 2?? Backend Setup
+
+Navigate to the server directory and install dependencies:
+
+```bash
+cd server
+npm install
+```
+
+Create a `.env` file in the `server/` directory:
+
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/biznest
+JWT_SECRET=your_secure_jwt_secret_key_here
+NODE_ENV=development
+```
+
+**(Optional)** Seed the database with sample data:
+
+```bash
+npm run seed
+```
+
+Start the backend server:
+
+```bash
+npm start
+```
+
+The API server will run on `http://localhost:5000`
+
+#### 3?? Mobile App Setup
+
+Navigate to the Flutter app directory:
+
+```bash
+cd ../biznest_app
+```
+
+Install Flutter dependencies:
+
+```bash
+flutter pub get
+```
+
+**Configure API Endpoint:**
+
+Edit [lib/core/services/api_service.dart](biznest_app/lib/core/services/api_service.dart) to set your server IP address if running on a physical device.
+
+**Run the Application:**
+
+```bash
+# For Android emulator/device
+flutter run
+
+# For specific device
+flutter devices
+flutter run -d <device-id>
+```
+
+### ?? Configuration
+
+#### Environment Variables
+
+**Backend (server/.env):**
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PORT` | Server port number | `5000` |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/biznest` |
+| `JWT_SECRET` | Secret key for JWT signing | `your_secure_secret` |
+| `NODE_ENV` | Environment mode | `development` or `production` |
+
+#### API Configuration
+
+For **Android physical devices**, update the base URL in the Flutter app:
+- Emulator: `http://10.0.2.2:5000/api`
+- Physical Device: `http://<YOUR_IP>:5000/api`
+
+The API service automatically detects the platform and adjusts the URL accordingly.
+
+---
+
+## ?? Running the Application
+
+### Development Mode
+
+1. **Start MongoDB** (if running locally):
+   ```bash
+   # Windows
+   net start MongoDB
+   
+   # macOS/Linux
+   sudo systemctl start mongod
    ```
 
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Create a `.env` file in the `server/` directory with the following variables:
-   ```
-   PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/biznest
-   JWT_SECRET=your_jwt_secret_key_here
-   NODE_ENV=development
-   ```
-
-4. (Optional) Seed the database with sample data:
-   ```
-   npm run seed
-   ```
-
-### Frontend Setup
-1. Navigate to the client directory:
-   ```
-   cd client
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Create a `.env` file in the `client/` directory:
-   ```
-   VITE_API_URL=http://localhost:5000/api
-   ```
-
-### Running the Application
-1. **Start the backend server:**
-   ```
+2. **Start the Backend API**:
+   ```bash
    cd server
    npm start
    ```
-   The server will run on `http://localhost:5000`
 
-2. **Start the frontend development server (in a new terminal):**
+3. **Launch the Mobile App**:
+   ```bash
+   cd biznest_app
+   flutter run
    ```
-   cd client
-   npm run dev
-   ```
-   The frontend will run on `http://localhost:5173`
 
-3. **Access the application:**
-   - Open your browser and navigate to `http://localhost:5173`
-   - Use the login/signup to create an account
+4. **Access the Application**:
+   - Create an account or login
+   - Explore business management or customer portal features
 
 ### Building for Production
-**Frontend:**
-```
-cd client
-npm run build
-```
-Output will be in `client/dist/`
 
-**Backend:**
-No build step required. Deploy the `server/` directory with `npm install --production`
+#### Android APK
 
-Image Uploads
--------------
-Product images can be uploaded via the product management interface. Uploaded files are stored in `server/uploads/` and served from:
+```bash
+cd biznest_app
+flutter build apk --release
+```
+
+Output: `build/app/outputs/flutter-apk/app-release.apk`
+
+#### Android App Bundle (for Play Store)
+
+```bash
+flutter build appbundle --release
+```
+
+Output: `build/app/outputs/bundle/release/app-release.aab`
+
+---
+
+## ?? API Documentation
+
+### Base URL
+```
+http://localhost:5000/api
+```
+
+### Authentication
+
+Include JWT token in request headers:
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+### Core Endpoints
+
+#### Authentication
+```http
+POST   /api/auth/signup           # Register new user
+POST   /api/auth/login            # User login
+GET    /api/auth/me               # Get current user profile
+```
+
+#### Business Management
+```http
+GET    /api/business              # Get business profile
+POST   /api/business              # Create business
+PUT    /api/business              # Update business
+```
+
+#### Products
+```http
+GET    /api/products              # List all products
+POST   /api/products              # Create product
+GET    /api/products/:id          # Get product details
+PUT    /api/products/:id          # Update product
+DELETE /api/products/:id          # Delete product
+POST   /api/uploads/product-image # Upload product image
+```
+
+#### Orders
+```http
+GET    /api/orders                # List orders
+POST   /api/orders                # Create order
+GET    /api/orders/:id            # Get order details
+PUT    /api/orders/:id/status     # Update order status
+PUT    /api/orders/:id/payment    # Update payment status
+```
+
+#### Customers
+```http
+GET    /api/customers             # List customers
+POST   /api/customers             # Create customer
+GET    /api/customers/:id         # Get customer details
+PUT    /api/customers/:id         # Update customer
+DELETE /api/customers/:id         # Delete customer
+```
+
+#### Expenses
+```http
+GET    /api/expenses              # List expenses
+POST   /api/expenses              # Create expense
+GET    /api/expenses/summary      # Get expense summary
+```
+
+#### Analytics
+```http
+GET    /api/analytics/dashboard      # Dashboard metrics
+GET    /api/analytics/revenue-chart  # Revenue data
+GET    /api/analytics/health-score   # Business health score
+```
+
+#### Customer Portal
+```http
+GET    /api/store/businesses           # Browse businesses
+GET    /api/store/businesses/:id       # Business details
+GET    /api/store/all-products         # All products
+GET    /api/store/products/:id         # Product details
+GET    /api/store/products/:id/reviews # Product reviews
+POST   /api/store/products/:id/reviews # Submit review
+POST   /api/store/orders               # Create order
+GET    /api/store/orders               # Customer orders
+GET    /api/store/orders/:id           # Order details
+PUT    /api/store/orders/:id/cancel    # Cancel order
+POST   /api/store/orders/:id/reorder   # Reorder
+```
+
+#### Support System
+```http
+POST   /api/store/support         # Submit support ticket
+GET    /api/store/support         # Get customer tickets
+GET    /api/support               # List all tickets (admin)
+PUT    /api/support/:id/reply     # Reply to ticket (admin)
+```
+
+### File Uploads
+
+Product images are stored in `server/uploads/` and served from:
 ```
 http://localhost:5000/uploads/<filename>
 ```
 
-Supported formats: JPEG, PNG, WebP
-Maximum file size: 5MB
+**Supported Formats:** JPEG, PNG, WebP  
+**Maximum Size:** 5MB
 
-API Documentation
-------------------
+---
 
-### Authentication Endpoints
-```
-POST   /api/auth/signup          - Register a new user
-POST   /api/auth/login           - Login user
-GET    /api/auth/me              - Get current user profile
-```
+## ??? Troubleshooting
 
-### Business Endpoints
-```
-GET    /api/business             - Get business profile
-POST   /api/business             - Create business profile
-PUT    /api/business             - Update business profile
-```
+### Common Issues
 
-### Product Management
-```
-GET    /api/products             - List all products
-POST   /api/products             - Create new product
-GET    /api/products/:id         - Get product details
-PUT    /api/products/:id         - Update product
-DELETE /api/products/:id         - Delete product
-```
+**MongoDB Connection Error**
+- Ensure MongoDB is running: `mongod --version`
+- Verify `MONGODB_URI` in `.env` file
+- Check if port 27017 is available
 
-### Order Management
-```
-GET    /api/orders               - List all orders
-POST   /api/orders               - Create new order
-GET    /api/orders/:id           - Get order details
-PUT    /api/orders/:id/status    - Update order status
-PUT    /api/orders/:id/payment   - Update payment status
-```
+**CORS Errors**
+- Verify backend URL in Flutter app matches server address
+- Check CORS configuration in `server/server.js`
 
-### Customer Management
-```
-GET    /api/customers            - List all customers
-POST   /api/customers            - Create new customer
-GET    /api/customers/:id        - Get customer details
-PUT    /api/customers/:id        - Update customer
-DELETE /api/customers/:id        - Delete customer
-```
+**Port Already in Use**
+- Change `PORT` value in `server/.env`
+- Kill process using the port:
+  ```bash
+  # Windows
+  netstat -ano | findstr :5000
+  taskkill /PID <PID> /F
+  
+  # macOS/Linux
+  lsof -ti:5000 | xargs kill -9
+  ```
 
-### Expense Tracking
-```
-GET    /api/expenses             - List all expenses
-POST   /api/expenses             - Create new expense
-GET    /api/expenses/summary     - Get expense summary
-```
+**Flutter Build Errors**
+- Clean build cache: `flutter clean && flutter pub get`
+- Update Flutter: `flutter upgrade`
+- Check Flutter doctor: `flutter doctor -v`
 
-### Analytics & Dashboard
-```
-GET    /api/analytics/dashboard          - Get dashboard metrics
-GET    /api/analytics/revenue-chart      - Get revenue data
-GET    /api/analytics/health-score       - Get business health score
-```
+**Image Upload Issues**
+- Verify `server/uploads/` directory exists
+- Check folder permissions (read/write access)
+- Ensure file size is under 5MB
 
-### Customer Portal / Storefront
-```
-GET    /api/store/businesses            - List all businesses
-GET    /api/store/businesses/:id        - Get business details
-GET    /api/store/all-products          - List all products
-GET    /api/store/products/:id          - Get product details
-GET    /api/store/products/:id/reviews  - Get product reviews
-POST   /api/store/products/:id/reviews  - Post a review (eligibility checked)
-POST   /api/store/orders                - Create order in storefront
-GET    /api/store/orders                - Get customer's orders
-GET    /api/store/orders/:id            - Get order details
-PUT    /api/store/orders/:id/cancel     - Cancel order
-POST   /api/store/orders/:id/reorder    - Reorder from previous order
-POST   /api/store/support               - Submit support ticket
-GET    /api/store/support               - Get support tickets
-```
+---
 
-### Admin Support Management
-```
-GET    /api/support                     - List all support tickets
-PUT    /api/support/:id/reply           - Reply to support ticket
-```
+## ?? Contributing
 
-### File Upload Endpoints
-```
-POST   /api/uploads/product-image       - Upload product image
-```
+Contributions are welcome! Please follow these guidelines:
 
-Authentication
----------------
-The API uses JWT (JSON Web Token) for authentication. Include the token in the Authorization header:
-```
-Authorization: Bearer <token>
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Tokens are issued on login and are valid for a configurable duration. Role-based access control (RBAC) is implemented for business owners and customers.
+### Development Guidelines
 
-Troubleshooting
----------------
-- **MongoDB connection error**: Ensure MongoDB is running and `MONGODB_URI` is correct
-- **CORS errors**: Check that frontend and backend URLs match in `.env` files
-- **Port already in use**: Change the `PORT` in `server/.env`
-- **Image upload issues**: Verify `server/uploads/` directory exists and has write permissions
+- Follow Flutter and Dart style guidelines
+- Write meaningful commit messages
+- Add comments for complex logic
+- Test features thoroughly before submitting PR
+- Update documentation for new features
+
+---
+
+## ?? License
+
+This project is licensed for educational and demonstration purposes.
+
+---
+
+## ?? Authors
+
+**Your Name** - Initial work
+
+---
+
+## ?? Acknowledgments
+
+- Flutter team for the amazing framework
+- MongoDB and Express.js communities
+- All contributors and testers
+
+---
+
+<div align="center">
+
+**Made with ?? for small businesses**
+
+</div>
