@@ -235,16 +235,46 @@ String resolveProductImageUrl(Map<String, dynamic> product) {
 }
 
 String resolveOrderItemImageUrl(Map<String, dynamic> item) {
-  final direct =
-      item['image'] ??
-      item['imageUrl'] ??
-      item['thumbnail'] ??
-      (item['product'] is Map
-          ? resolveProductImageUrl(Map<String, dynamic>.from(item['product']))
-          : '');
+  String _asUrl(dynamic value) {
+    if (value is String && value.trim().isNotEmpty) return value;
+    if (value is Map) {
+      final nested =
+          value['url'] ?? value['src'] ?? value['secure_url'] ?? value['image'];
+      if (nested is String && nested.trim().isNotEmpty) return nested;
+    }
+    return '';
+  }
 
-  if (direct is String && direct.trim().isNotEmpty) {
-    return resolveImageUrl(direct);
+  final productMap = item['product'] is Map
+      ? Map<String, dynamic>.from(item['product'])
+      : (item['productId'] is Map
+            ? Map<String, dynamic>.from(item['productId'])
+            : null);
+
+  final directCandidates = [
+    item['image'],
+    item['imageUrl'],
+    item['thumbnail'],
+    item['photo'],
+    item['productImage'],
+    item['media'] is Map ? item['media']['url'] : null,
+  ];
+
+  for (final candidate in directCandidates) {
+    final url = _asUrl(candidate);
+    if (url.isNotEmpty) return resolveImageUrl(url);
+  }
+
+  if (productMap != null) {
+    final productUrl = resolveProductImageUrl(productMap);
+    if (productUrl.isNotEmpty) return resolveImageUrl(productUrl);
+  }
+
+  final images = item['images'];
+  if (images is List && images.isNotEmpty) {
+    final first = images.first;
+    final url = _asUrl(first);
+    if (url.isNotEmpty) return resolveImageUrl(url);
   }
 
   return '';

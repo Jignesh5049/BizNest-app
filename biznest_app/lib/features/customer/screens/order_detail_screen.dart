@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
@@ -19,7 +20,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Map<String, dynamic>? _order;
   bool _loading = true;
   final _reviewCtrl = TextEditingController();
-  int _reviewRating = 5;
+  int _reviewRating = 0;
   final _supportSubjectCtrl = TextEditingController();
   final _supportMessageCtrl = TextEditingController();
 
@@ -66,8 +67,53 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  String _errorMessage(
+    Object error, {
+    String fallback = 'Something went wrong',
+  }) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map && data['message'] != null) {
+        return data['message'].toString();
+      }
+    }
+    return fallback;
+  }
+
+  String _resolveProductId(Map<String, dynamic> item) {
+    final product = item['product'];
+    if (product is Map && product['_id'] != null) {
+      return product['_id'].toString();
+    }
+
+    final productId = item['productId'];
+    if (productId is Map && productId['_id'] != null) {
+      return productId['_id'].toString();
+    }
+    if (productId != null) return productId.toString();
+    return '';
+  }
+
   Future<void> _submitReview(String productId) async {
-    if (_reviewCtrl.text.trim().isEmpty) return;
+    if (productId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid product for review')),
+      );
+      return;
+    }
+    if (_reviewRating < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a star rating')),
+      );
+      return;
+    }
+    if (_reviewCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please write a review')));
+      return;
+    }
+
     try {
       await _api.createReview(productId, {
         'rating': _reviewRating,
@@ -80,17 +126,32 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Review submitted!')));
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _errorMessage(e, fallback: 'Failed to submit review'),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _submitSupport() async {
-    if (_supportSubjectCtrl.text.trim().isEmpty) return;
+    if (_supportMessageCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please describe the issue')),
+      );
+      return;
+    }
     try {
       await _api.createSupportTicket({
         'orderId': widget.orderId,
         'subject': _supportSubjectCtrl.text.trim(),
         'message': _supportMessageCtrl.text.trim(),
-        'issueType': 'order_issue',
+        'issueType': 'complaint',
       });
       _supportSubjectCtrl.clear();
       _supportMessageCtrl.clear();
@@ -100,12 +161,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SnackBar(content: Text('Support ticket created!')),
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _errorMessage(e, fallback: 'Failed to submit support request'),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _showReviewDialog(String productId, String name) {
     _reviewCtrl.clear();
-    _reviewRating = 5;
+    _reviewRating = 0;
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -126,18 +197,42 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    5,
-                    (i) => IconButton(
-                      onPressed: () => ss(() => _reviewRating = i + 1),
-                      icon: Icon(
-                        i < _reviewRating ? Icons.star : Icons.star_border,
-                        size: 28,
-                        color: const Color(0xFFFBBF24),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: List.generate(5, (i) {
+                    final selected = i < _reviewRating;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => ss(() => _reviewRating = i + 1),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 120),
+                        curve: Curves.easeOut,
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? const Color(0xFFFBBF24).withValues(alpha: 0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Icon(
+                          selected ? Icons.star : Icons.star_border,
+                          size: 28,
+                          color: const Color(0xFFFBBF24),
+                        ),
                       ),
-                    ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _reviewRating == 0
+                      ? 'Tap stars to rate'
+                      : '$_reviewRating of 5',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.gray500,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -259,7 +354,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final status = (o['status'] ?? 'pending').toString();
     final sc = getStatusColor(status);
     final items = o['items'] as List? ?? [];
-    final total = (o['totalAmount'] ?? 0).toDouble();
+    final total =
+        ((o['total'] ?? o['totalAmount'] ?? o['subtotal'] ?? 0) as num?)
+            ?.toDouble() ??
+        0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -482,7 +580,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                 ),
               OutlinedButton.icon(
-                onPressed: _showSupportDialog,
+                onPressed: status == 'completed'
+                    ? _showSupportDialog
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Report issue is available after order completion',
+                            ),
+                          ),
+                        );
+                      },
                 icon: const Icon(Icons.chat_outlined, size: 16),
                 label: const Text('Report Issue'),
                 style: OutlinedButton.styleFrom(
@@ -506,11 +614,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const SizedBox(height: 12),
             ...items.map((item) {
               final i = Map<String, dynamic>.from(item as Map);
-              final pid =
-                  (i['product'] is Map
-                          ? i['product']['_id']
-                          : i['productId'] ?? '')
-                      .toString();
+              final pid = _resolveProductId(i);
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),

@@ -159,7 +159,7 @@ router.get('/products/:id/reviews', async (req, res) => {
 // @access  Public
 router.get('/all-products', async (req, res) => {
     try {
-        const { category, search, limit = 20 } = req.query;
+        const { category, search, sort = 'newest', limit = 20 } = req.query;
 
         let query = {
             isActive: { $ne: false }
@@ -176,9 +176,27 @@ router.get('/all-products', async (req, res) => {
             ];
         }
 
+        // Handle sorting
+        let sortOption = {};
+        switch (sort) {
+            case 'price_low':
+                sortOption = { sellingPrice: 1, price: 1 };
+                break;
+            case 'price_high':
+                sortOption = { sellingPrice: -1, price: -1 };
+                break;
+            case 'name_asc':
+                sortOption = { name: 1 };
+                break;
+            case 'newest':
+            default:
+                sortOption = { createdAt: -1 };
+                break;
+        }
+
         const products = await Product.find(query)
             .populate('businessId', 'name logo category')
-            .sort({ createdAt: -1 })
+            .sort(sortOption)
             .limit(parseInt(limit));
 
         const hydratedProducts = await applyRatingStats(products);
@@ -410,8 +428,51 @@ router.get('/orders', protect, customerOnly, async (req, res) => {
 
         if (productIds.size) {
             const products = await Product.find({ _id: { $in: Array.from(productIds) } })
-                .select('_id image');
-            const imageMap = new Map(products.map(product => [product._id.toString(), product.image]));
+                .select('_id image images imageUrl thumbnail photo productImage media');
+
+            const pickImageUrl = (value) => {
+                if (!value) return '';
+                if (typeof value === 'string') return value;
+                if (typeof value === 'object') {
+                    return value.url || value.src || value.secure_url || value.image || '';
+                }
+                return '';
+            };
+
+            const imageMap = new Map(products.map(product => {
+                const firstImage =
+                    pickImageUrl(product.image) ||
+                    pickImageUrl(product.imageUrl) ||
+                    pickImageUrl(product.thumbnail) ||
+                    pickImageUrl(product.photo) ||
+                    pickImageUrl(product.productImage) ||
+                    pickImageUrl(product.media && product.media.url) ||
+                    (Array.isArray(product.images) && product.images.length
+                        ? pickImageUrl(product.images[0])
+                        : '');
+
+                if (product.name && /bread|pav/i.test(product.name)) {
+                    console.log('\n=== DEBUG: Bread/Pav Product ===');
+                    console.log('Product:', product.name, '(ID:', product._id, ')');
+                    console.log('image field:', JSON.stringify(product.image));
+                    console.log('imageUrl field:', JSON.stringify(product.imageUrl));
+                    console.log('images field:', JSON.stringify(product.images));
+                    console.log('Resolved firstImage:', firstImage);
+                    console.log('================================\n');
+                }
+
+                if (product.name && /bread|pav/i.test(product.name)) {
+                    console.log('\n=== DEBUG: Bread/Pav Product (Detail) ===');
+                    console.log('Product:', product.name, '(ID:', product._id, ')');
+                    console.log('image field:', JSON.stringify(product.image));
+                    console.log('imageUrl field:', JSON.stringify(product.imageUrl));
+                    console.log('images field:', JSON.stringify(product.images));
+                    console.log('Resolved firstImage:', firstImage);
+                    console.log('================================\n');
+                }
+
+                return [product._id.toString(), firstImage || ''];
+            }));
 
             orderData.forEach(order => {
                 order.items = order.items?.map(item => ({
@@ -452,8 +513,31 @@ router.get('/orders/:id', protect, customerOnly, async (req, res) => {
 
         if (productIds.size) {
             const products = await Product.find({ _id: { $in: Array.from(productIds) } })
-                .select('_id image');
-            const imageMap = new Map(products.map(product => [product._id.toString(), product.image]));
+                .select('_id image images imageUrl thumbnail photo productImage media');
+
+            const pickImageUrl = (value) => {
+                if (!value) return '';
+                if (typeof value === 'string') return value;
+                if (typeof value === 'object') {
+                    return value.url || value.src || value.secure_url || value.image || '';
+                }
+                return '';
+            };
+
+            const imageMap = new Map(products.map(product => {
+                const firstImage =
+                    pickImageUrl(product.image) ||
+                    pickImageUrl(product.imageUrl) ||
+                    pickImageUrl(product.thumbnail) ||
+                    pickImageUrl(product.photo) ||
+                    pickImageUrl(product.productImage) ||
+                    pickImageUrl(product.media && product.media.url) ||
+                    (Array.isArray(product.images) && product.images.length
+                        ? pickImageUrl(product.images[0])
+                        : '');
+
+                return [product._id.toString(), firstImage || ''];
+            }));
 
             orderData.items = orderData.items?.map(item => ({
                 ...item,

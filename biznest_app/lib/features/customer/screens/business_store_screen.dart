@@ -329,8 +329,6 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
     final imageUrl = resolveProductImageUrl(p);
     final imageProvider = resolveImageProvider(imageUrl);
     final isFav = _favoriteIds.contains(p['_id']);
-    final cart = context.read<CartCubit>();
-    final inCart = cart.state.isInCart(p['_id']);
 
     return GestureDetector(
       onTap: () => context.go('/store/product/${p['_id']}'),
@@ -428,42 +426,111 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: inCart
-                          ? null
-                          : () {
-                              cart.addToCart(
-                                p,
-                                businessId: widget.businessId,
-                                businessName: _business?['name'],
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${p['name']} added to cart'),
-                                  duration: const Duration(seconds: 1),
+                  BlocBuilder<CartCubit, CartState>(
+                    builder: (context, cartState) {
+                      final cart = context.read<CartCubit>();
+                      final inCart = cartState.isInCart(p['_id']);
+
+                      return SizedBox(
+                        width: double.infinity,
+                        child: inCart
+                            ? Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.primary600,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                final currentQty = cartState
+                                                    .getQuantity(p['_id']);
+                                                cart.updateQuantity(
+                                                  p['_id'],
+                                                  currentQty - 1,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                Icons.remove,
+                                                size: 16,
+                                                color: AppColors.primary600,
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${cartState.getQuantity(p['_id'])}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.gray900,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                final currentQty = cartState
+                                                    .getQuantity(p['_id']);
+                                                cart.updateQuantity(
+                                                  p['_id'],
+                                                  currentQty + 1,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                Icons.add,
+                                                size: 16,
+                                                color: AppColors.primary600,
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ElevatedButton(
+                                onPressed: () {
+                                  cart.addToCart(
+                                    p,
+                                    businessId: widget.businessId,
+                                    businessName: _business?['name'],
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${p['name']} added to cart',
+                                      ),
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  textStyle: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              );
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: inCart
-                            ? AppColors.gray200
-                            : AppColors.primary600,
-                        foregroundColor: inCart
-                            ? AppColors.gray600
-                            : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        textStyle: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      child: Text(inCart ? 'In Cart' : 'Add to Cart'),
-                    ),
+                                child: const Text('Add to Cart'),
+                              ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                 ],

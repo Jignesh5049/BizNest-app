@@ -127,8 +127,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget _card(Map<String, dynamic> p) {
     final imageUrl = resolveProductImageUrl(p);
     final imageProvider = resolveImageProvider(imageUrl);
-    final cart = context.read<CartCubit>();
-    final inCart = cart.state.isInCart(p['_id'] ?? '');
 
     return GestureDetector(
       onTap: () => context.go('/store/product/${p['_id']}'),
@@ -226,41 +224,111 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: inCart
-                          ? null
-                          : () {
-                              final businessId = p['businessId'] is Map
-                                  ? p['businessId']['_id']
-                                  : p['businessId'];
-                              cart.addToCart(p, businessId: businessId);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${p['name']} added to cart'),
-                                  duration: const Duration(seconds: 1),
+                  BlocBuilder<CartCubit, CartState>(
+                    builder: (context, cartState) {
+                      final cart = context.read<CartCubit>();
+                      final productId = (p['_id'] ?? '').toString();
+                      final inCart = cartState.isInCart(productId);
+
+                      return SizedBox(
+                        width: double.infinity,
+                        child: inCart
+                            ? Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.primary600,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                final currentQty = cartState
+                                                    .getQuantity(productId);
+                                                cart.updateQuantity(
+                                                  productId,
+                                                  currentQty - 1,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                Icons.remove,
+                                                size: 16,
+                                                color: AppColors.primary600,
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${cartState.getQuantity(productId)}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.gray900,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                final currentQty = cartState
+                                                    .getQuantity(productId);
+                                                cart.updateQuantity(
+                                                  productId,
+                                                  currentQty + 1,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                Icons.add,
+                                                size: 16,
+                                                color: AppColors.primary600,
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ElevatedButton(
+                                onPressed: () {
+                                  final businessId = p['businessId'] is Map
+                                      ? p['businessId']['_id']
+                                      : p['businessId'];
+                                  cart.addToCart(p, businessId: businessId);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${p['name']} added to cart',
+                                      ),
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  textStyle: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              );
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: inCart
-                            ? AppColors.gray200
-                            : AppColors.primary600,
-                        foregroundColor: inCart
-                            ? AppColors.gray600
-                            : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        textStyle: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      child: Text(inCart ? 'In Cart' : 'Add to Cart'),
-                    ),
+                                child: const Text('Add to Cart'),
+                              ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                 ],

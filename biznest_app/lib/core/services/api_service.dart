@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+
 import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 import 'package:image_picker/image_picker.dart';
 import 'token_service.dart';
@@ -9,24 +8,12 @@ class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
 
+  static const Duration _authRequestTimeout = Duration(seconds: 60);
+
   late final Dio _dio;
   final _tokenService = TokenService();
 
-  // Computer's LAN IP - Make sure this matches your actual LAN IP
-  // Run 'ipconfig' on Windows to find IPv4 Address of your Wi-Fi adapter
-  static const String _serverIp = '192.168.6.14';
-
-  static String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5000/api';
-    }
-    // Physical Android/iOS devices need the computer's LAN IP
-    if (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS) {
-      return 'http://$_serverIp:5000/api';
-    }
-    return 'http://localhost:5000/api';
-  }
+  static const String _baseUrl = 'https://biznest-app.onrender.com/api';
 
   ApiService._internal() {
     _dio = Dio(
@@ -112,8 +99,15 @@ class ApiService {
   // ==================== AUTH API ====================
   Future<Response> signup(Map<String, dynamic> data) =>
       _dio.post('/auth/signup', data: data);
-  Future<Response> login(Map<String, dynamic> data) =>
-      _dio.post('/auth/login', data: data);
+  Future<Response> login(Map<String, dynamic> data) => _dio.post(
+    '/auth/login',
+    data: data,
+    options: Options(
+      connectTimeout: _authRequestTimeout,
+      sendTimeout: _authRequestTimeout,
+      receiveTimeout: _authRequestTimeout,
+    ),
+  );
   Future<Response> syncUser(Map<String, dynamic> data) =>
       _dio.post('/auth/sync', data: data);
   Future<Response> getMe() => _dio.get('/auth/me');

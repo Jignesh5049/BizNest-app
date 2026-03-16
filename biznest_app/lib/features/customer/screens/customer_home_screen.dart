@@ -172,7 +172,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               const Spacer(),
               PopupMenuButton<String>(
                 onSelected: (v) {
-                  _sort = v;
+                  setState(() {
+                    _sort = v;
+                  });
                   _fetchData();
                 },
                 child: Container(
@@ -249,11 +251,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             ),
             const SizedBox(height: 10),
             SizedBox(
-              height: 130,
+              height: 90,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _businesses.length > 6 ? 6 : _businesses.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (_, i) => _businessCard(_businesses[i]),
               ),
             ),
@@ -308,7 +310,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: () {
-          _category = value;
+          setState(() {
+            _category = value;
+          });
           _fetchData();
         },
         child: Container(
@@ -337,43 +341,35 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     final b = Map<String, dynamic>.from(biz as Map);
     return GestureDetector(
       onTap: () => context.go('/store/business/${b['_id']}'),
-      child: Container(
-        width: 160,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.gray100),
-        ),
+      child: SizedBox(
+        width: 80,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
-              radius: 20,
+              radius: 28,
               backgroundColor: AppColors.primary100,
               child: Text(
                 (b['name'] ?? '?')[0].toUpperCase(),
                 style: GoogleFonts.inter(
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary700,
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               b['name'] ?? '',
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gray900,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              b['category'] ?? '',
-              style: GoogleFonts.inter(fontSize: 11, color: AppColors.gray500),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -385,8 +381,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     final imageUrl = resolveProductImageUrl(p);
     final imageProvider = resolveImageProvider(imageUrl);
     final isFav = _favoriteIds.contains(p['_id']);
-    final cart = context.read<CartCubit>();
-    final inCart = cart.state.isInCart(p['_id']);
 
     return GestureDetector(
       onTap: () => context.go('/store/product/${p['_id']}'),
@@ -469,41 +463,110 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: inCart
-                          ? null
-                          : () {
-                              final businessId = p['businessId'] is Map
-                                  ? p['businessId']['_id']
-                                  : p['businessId'];
-                              cart.addToCart(p, businessId: businessId);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${p['name']} added to cart'),
-                                  duration: const Duration(seconds: 1),
+                  BlocBuilder<CartCubit, CartState>(
+                    builder: (context, cartState) {
+                      final cart = context.read<CartCubit>();
+                      final inCart = cartState.isInCart(p['_id']);
+
+                      return SizedBox(
+                        width: double.infinity,
+                        child: inCart
+                            ? Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.primary600,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                final currentQty = cartState
+                                                    .getQuantity(p['_id']);
+                                                cart.updateQuantity(
+                                                  p['_id'],
+                                                  currentQty - 1,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                Icons.remove,
+                                                size: 16,
+                                                color: AppColors.primary600,
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${cartState.getQuantity(p['_id'])}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.gray900,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                final currentQty = cartState
+                                                    .getQuantity(p['_id']);
+                                                cart.updateQuantity(
+                                                  p['_id'],
+                                                  currentQty + 1,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                Icons.add,
+                                                size: 16,
+                                                color: AppColors.primary600,
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ElevatedButton(
+                                onPressed: () {
+                                  final businessId = p['businessId'] is Map
+                                      ? p['businessId']['_id']
+                                      : p['businessId'];
+                                  cart.addToCart(p, businessId: businessId);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${p['name']} added to cart',
+                                      ),
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  textStyle: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              );
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: inCart
-                            ? AppColors.gray200
-                            : AppColors.primary600,
-                        foregroundColor: inCart
-                            ? AppColors.gray600
-                            : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        textStyle: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      child: Text(inCart ? 'In Cart' : 'Add to Cart'),
-                    ),
+                                child: const Text('Add to Cart'),
+                              ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                 ],

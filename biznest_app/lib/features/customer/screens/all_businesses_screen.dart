@@ -153,7 +153,9 @@ class _AllBusinessesScreenState extends State<AllBusinessesScreen> {
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: () {
-          _category = value;
+          setState(() {
+            _category = value;
+          });
           _fetch();
         },
         child: Container(
