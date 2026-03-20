@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../cubit/cart_cubit.dart';
 
@@ -20,23 +19,13 @@ class CustomerShell extends StatelessWidget {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Row(
-          children: [
-            SvgPicture.asset(
-              'assets/images/favicon.svg',
-              width: 24,
-              height: 24,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'BizNest',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.gray900,
-              ),
-            ),
-          ],
+        title: Text(
+          'BizNest',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.gray900,
+          ),
         ),
         actions: [
           // Cart icon with badge

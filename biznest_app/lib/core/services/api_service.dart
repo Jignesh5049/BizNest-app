@@ -37,9 +37,14 @@ class ApiService {
           }
 
           // Fall back to Supabase token
-          final session = Supabase.instance.client.auth.currentSession;
-          if (session != null) {
-            options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+          try {
+            final session = Supabase.instance.client.auth.currentSession;
+            if (session != null) {
+              options.headers['Authorization'] =
+                  'Bearer ${session.accessToken}';
+            }
+          } catch (_) {
+            // Supabase not initialized; continue with JWT-only auth flow.
           }
           return handler.next(options);
         },

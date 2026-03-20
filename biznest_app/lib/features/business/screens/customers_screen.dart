@@ -232,12 +232,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
         const SizedBox(height: 16),
 
         // Search + Add
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
+        Row(
           children: [
-            SizedBox(
-              width: 260,
+            Expanded(
               child: TextField(
                 onChanged: (v) => setState(() => _search = v),
                 decoration: InputDecoration(
@@ -260,6 +257,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 ),
               ),
             ),
+            const SizedBox(width: 12),
             ElevatedButton.icon(
               onPressed: _openAddCustomerScreen,
               icon: const Icon(Icons.add, size: 20),

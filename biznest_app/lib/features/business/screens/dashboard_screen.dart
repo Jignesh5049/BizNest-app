@@ -510,15 +510,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHealthScoreCard() {
-    final score = _healthScore?['score'] ?? 0;
+    final scoreValue = _healthScore?['score'];
+    final score = scoreValue == null
+        ? 0.0
+        : scoreValue is String
+        ? (double.tryParse(scoreValue) ?? 0.0)
+        : (scoreValue is num ? scoreValue.toDouble() : 0.0);
     final status = _healthScore?['status'] ?? 'Unknown';
     final tips = _healthScore?['tips'] as List? ?? [];
 
     Color scoreColor;
-    if (score >= 80) {
-      scoreColor = AppColors.success;
-    } else if (score >= 60) {
-      scoreColor = AppColors.warning;
+    if (score >= 70) {
+      scoreColor = const Color(0xFF22C55E);
+    } else if (score >= 40) {
+      scoreColor = const Color(0xFFEAB308);
     } else {
       scoreColor = AppColors.danger;
     }
@@ -535,7 +540,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Business Health',
+            'Business Health Score',
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -558,6 +563,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       strokeWidth: 10,
                       backgroundColor: AppColors.gray100,
                       color: scoreColor,
+                      strokeCap: StrokeCap.round,
                     ),
                   ),
                   Column(
@@ -565,11 +571,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '$score',
+                        '${score.toInt()}',
                         style: GoogleFonts.inter(
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.gray900,
+                          color: scoreColor,
                           height: 1.0,
                         ),
                       ),
@@ -578,8 +584,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         status,
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: scoreColor,
-                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray500,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],

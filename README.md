@@ -4,7 +4,7 @@
 
 **A comprehensive business management platform for small and home-based businesses**
 
-Built with Flutter · Powered by Node.js & MongoDB
+Built with Flutter ï¿½ Powered by Node.js & MongoDB
 
 </div>
 
@@ -79,56 +79,56 @@ BizNest is a full-featured mobile application that empowers small businesses to 
 
 ```
 BizNest_App/
-¦
+ï¿½
 +-- biznest_app/                    # Flutter Mobile Application
-¦   +-- lib/
-¦   ¦   +-- main.dart              # Application entry point
-¦   ¦   +-- core/                  # Core functionality
-¦   ¦   ¦   +-- services/          # API, authentication, storage services
-¦   ¦   ¦   +-- utils/             # Helper functions and utilities
-¦   ¦   ¦   +-- widgets/           # Shared UI components
-¦   ¦   +-- features/              # Feature-based modules
-¦   ¦       +-- auth/              # Authentication & onboarding
-¦   ¦       +-- business/          # Business management features
-¦   ¦       +-- customer/          # Customer-facing features
-¦   +-- android/                   # Android-specific configuration
-¦   +-- assets/                    # Images and static resources
-¦   ¦   +-- images/                # Application images
-¦   +-- pubspec.yaml               # Flutter dependencies
-¦   +-- README.md                  # Mobile app documentation
-¦
+ï¿½   +-- lib/
+ï¿½   ï¿½   +-- main.dart              # Application entry point
+ï¿½   ï¿½   +-- core/                  # Core functionality
+ï¿½   ï¿½   ï¿½   +-- services/          # API, authentication, storage services
+ï¿½   ï¿½   ï¿½   +-- utils/             # Helper functions and utilities
+ï¿½   ï¿½   ï¿½   +-- widgets/           # Shared UI components
+ï¿½   ï¿½   +-- features/              # Feature-based modules
+ï¿½   ï¿½       +-- auth/              # Authentication & onboarding
+ï¿½   ï¿½       +-- business/          # Business management features
+ï¿½   ï¿½       +-- customer/          # Customer-facing features
+ï¿½   +-- android/                   # Android-specific configuration
+ï¿½   +-- assets/                    # Images and static resources
+ï¿½   ï¿½   +-- images/                # Application images
+ï¿½   +-- pubspec.yaml               # Flutter dependencies
+ï¿½   +-- README.md                  # Mobile app documentation
+ï¿½
 +-- server/                        # Node.js Backend API
-¦   +-- models/                    # MongoDB data schemas
-¦   ¦   +-- User.js               # User authentication model
-¦   ¦   +-- Business.js           # Business profile model
-¦   ¦   +-- Product.js            # Product catalog model
-¦   ¦   +-- Order.js              # Order management model
-¦   ¦   +-- Customer.js           # Customer data model
-¦   ¦   +-- Expense.js            # Expense tracking model
-¦   ¦   +-- Review.js             # Product reviews model
-¦   ¦   +-- SupportTicket.js      # Support system model
-¦   +-- routes/                    # API route handlers
-¦   ¦   +-- auth.js               # Authentication endpoints
-¦   ¦   +-- business.js           # Business management APIs
-¦   ¦   +-- products.js           # Product CRUD operations
-¦   ¦   +-- orders.js             # Order processing APIs
-¦   ¦   +-- customers.js          # Customer management APIs
-¦   ¦   +-- expenses.js           # Expense tracking APIs
-¦   ¦   +-- analytics.js          # Analytics & reporting APIs
-¦   ¦   +-- customerPortal.js     # Customer storefront APIs
-¦   ¦   +-- support.js            # Support ticket APIs
-¦   ¦   +-- reviews.js            # Review management APIs
-¦   ¦   +-- uploads.js            # File upload handlers
-¦   +-- middleware/                # Express middleware
-¦   ¦   +-- auth.js               # JWT authentication middleware
-¦   +-- config/                    # Configuration files
-¦   ¦   +-- db.js                 # MongoDB connection setup
-¦   +-- scripts/                   # Utility scripts
-¦   +-- uploads/                   # File storage directory
-¦   +-- server.js                 # Express server entry point
-¦   +-- seed.js                   # Database seeding script
-¦   +-- package.json              # Node.js dependencies
-¦
+ï¿½   +-- models/                    # MongoDB data schemas
+ï¿½   ï¿½   +-- User.js               # User authentication model
+ï¿½   ï¿½   +-- Business.js           # Business profile model
+ï¿½   ï¿½   +-- Product.js            # Product catalog model
+ï¿½   ï¿½   +-- Order.js              # Order management model
+ï¿½   ï¿½   +-- Customer.js           # Customer data model
+ï¿½   ï¿½   +-- Expense.js            # Expense tracking model
+ï¿½   ï¿½   +-- Review.js             # Product reviews model
+ï¿½   ï¿½   +-- SupportTicket.js      # Support system model
+ï¿½   +-- routes/                    # API route handlers
+ï¿½   ï¿½   +-- auth.js               # Authentication endpoints
+ï¿½   ï¿½   +-- business.js           # Business management APIs
+ï¿½   ï¿½   +-- products.js           # Product CRUD operations
+ï¿½   ï¿½   +-- orders.js             # Order processing APIs
+ï¿½   ï¿½   +-- customers.js          # Customer management APIs
+ï¿½   ï¿½   +-- expenses.js           # Expense tracking APIs
+ï¿½   ï¿½   +-- analytics.js          # Analytics & reporting APIs
+ï¿½   ï¿½   +-- customerPortal.js     # Customer storefront APIs
+ï¿½   ï¿½   +-- support.js            # Support ticket APIs
+ï¿½   ï¿½   +-- reviews.js            # Review management APIs
+ï¿½   ï¿½   +-- uploads.js            # File upload handlers
+ï¿½   +-- middleware/                # Express middleware
+ï¿½   ï¿½   +-- auth.js               # JWT authentication middleware
+ï¿½   +-- config/                    # Configuration files
+ï¿½   ï¿½   +-- db.js                 # MongoDB connection setup
+ï¿½   +-- scripts/                   # Utility scripts
+ï¿½   +-- uploads/                   # File storage directory
+ï¿½   +-- server.js                 # Express server entry point
+ï¿½   +-- seed.js                   # Database seeding script
+ï¿½   +-- package.json              # Node.js dependencies
+ï¿½
 +-- .env.example                   # Environment variables template
 +-- .gitignore                     # Git ignore rules
 +-- README.md                      # Project documentation (this file)
@@ -167,12 +167,13 @@ cd server
 npm install
 ```
 
-Create a `.env` file in the `server/` directory:
+Create a `.env` file in the `server/` directory (you can copy `server/.env.example`):
 
 ```env
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/biznest
 JWT_SECRET=your_secure_jwt_secret_key_here
+SUPABASE_JWT_SECRET=your_supabase_jwt_secret_if_used
 NODE_ENV=development
 ```
 
@@ -204,9 +205,13 @@ Install Flutter dependencies:
 flutter pub get
 ```
 
-**Configure API Endpoint:**
+Configure required Flutter runtime env values using `--dart-define`:
 
-Edit [lib/core/services/api_service.dart](biznest_app/lib/core/services/api_service.dart) to set your server IP address if running on a physical device.
+```bash
+flutter run \
+   --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+   --dart-define=SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
 **Run the Application:**
 
@@ -230,6 +235,7 @@ flutter run -d <device-id>
 | `PORT` | Server port number | `5000` |
 | `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/biznest` |
 | `JWT_SECRET` | Secret key for JWT signing | `your_secure_secret` |
+| `SUPABASE_JWT_SECRET` | Supabase JWT secret for token verification (optional) | `your_supabase_jwt_secret` |
 | `NODE_ENV` | Environment mode | `development` or `production` |
 
 #### API Configuration

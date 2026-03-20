@@ -87,7 +87,15 @@ class AuthError extends AuthState {
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final ApiService _api = ApiService();
   final TokenService _tokenService = TokenService();
-  final _supabase = Supabase.instance.client;
+
+  bool get _hasSupabase {
+    try {
+      Supabase.instance.client;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   AuthBloc() : super(AuthInitial()) {
     on<AuthCheckRequested>(_onCheckAuth);
@@ -96,12 +104,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onLogout);
     on<AuthBusinessUpdated>(_onBusinessUpdated);
 
-    // Listen to Supabase auth state changes (only if using Supabase)
-    _supabase.auth.onAuthStateChange.listen((data) {
-      if (data.event == AuthChangeEvent.signedOut) {
-        add(AuthCheckRequested());
-      }
-    });
+    // Listen to Supabase auth state changes only when Supabase is initialized.
+    if (_hasSupabase) {
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        if (data.event == AuthChangeEvent.signedOut) {
+          add(AuthCheckRequested());
+        }
+      });
+    }
   }
 
   Future<void> _onCheckAuth(
@@ -143,8 +153,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
 
-      // Then check Supabase session
-      final session = _supabase.auth.currentSession;
+      // Then check Supabase session (if available)
+      final session = _hasSupabase
+          ? Supabase.instance.client.auth.currentSession
+          : null;
       if (session == null) {
         emit(AuthUnauthenticated());
         return;
@@ -254,11 +266,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
 
         // Direct auth failed, try Supabase
+        if (!_hasSupabase) {
+          emit(AuthError('Invalid email or password.'));
+          return;
+        }
+
         try {
-          final authResponse = await _supabase.auth.signInWithPassword(
-            email: event.email,
-            password: event.password,
-          );
+          final authResponse = await Supabase.instance.client.auth
+              .signInWithPassword(email: event.email, password: event.password);
 
           if (authResponse.session == null) {
             emit(AuthError('Login failed. Please try again.'));
@@ -362,8 +377,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
 
         // Direct signup failed, try Supabase
+        if (!_hasSupabase) {
+          emit(
+            AuthError(
+              dioError.response?.data['message']?.toString() ??
+                  'Signup failed. Please try again.',
+            ),
+          );
+          return;
+        }
+
         try {
-          final authResponse = await _supabase.auth.signUp(
+          final authResponse = await Supabase.instance.client.auth.signUp(
             email: event.email,
             password: event.password,
             data: {'name': event.name, 'role': event.role},
@@ -376,7 +401,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
           // Auto sign-in after signup
           if (authResponse.session == null) {
-            await _supabase.auth.signInWithPassword(
+            await Supabase.instance.client.auth.signInWithPassword(
               email: event.email,
               password: event.password,
             );
@@ -422,7 +447,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // Clear JWT token
     await _tokenService.clearAllTokens();
     // Sign out from Supabase
-    await _supabase.auth.signOut();
+    if (_hasSupabase) {
+      await Supabase.instance.client.auth.signOut();
+    }
     emit(AuthUnauthenticated());
   }
 

@@ -665,17 +665,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
         else
           LayoutBuilder(
             builder: (context, constraints) {
+              // Guard against transient zero-width constraints during layout.
+              if (constraints.maxWidth <= 0) {
+                return const SizedBox.shrink();
+              }
+
               final isCompact = constraints.maxWidth < 520;
-              final maxTileWidth = constraints.maxWidth > 1200
+              final targetTileWidth = constraints.maxWidth > 1200
                   ? 360.0
                   : (constraints.maxWidth > 700 ? 320.0 : 420.0);
+              final crossAxisCount = (constraints.maxWidth / targetTileWidth)
+                  .floor()
+                  .clamp(1, 6);
               final tileHeight = isCompact ? 232.0 : 244.0;
 
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: maxTileWidth,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
                   mainAxisExtent: tileHeight,

@@ -1,6 +1,7 @@
 // ignore_for_file: dead_code
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_colors.dart';
@@ -21,12 +22,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   bool _loading = true;
   String _filterCategory = '';
 
-  // Form
-  String _formCategory = 'raw_material';
-  final _amountCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
-  DateTime _formDate = DateTime.now();
-
   static const _chartColors = [
     Color(0xFF0ea5e9),
     Color(0xFF22c55e),
@@ -43,13 +38,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   void initState() {
     super.initState();
     _fetch();
-  }
-
-  @override
-  void dispose() {
-    _amountCtrl.dispose();
-    _descCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _fetch() async {
@@ -99,16 +87,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     }
   }
 
-  void _resetForm() {
-    _formCategory = 'raw_material';
-    _amountCtrl.clear();
-    _descCtrl.clear();
-    _formDate = DateTime.now();
-  }
-
-  void _openAddDialog() {
-    _resetForm();
-    showDialog(context: context, builder: (_) => _buildAddDialog());
+  Future<void> _openAddExpenseScreen() async {
+    final created = await context.push<bool>('/expenses/add');
+    if (created == true && mounted) {
+      _fetch();
+    }
   }
 
   @override
@@ -141,9 +124,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               style: GoogleFonts.inter(fontSize: 14, color: AppColors.gray500),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -154,6 +136,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
+                      isExpanded: true,
                       value: _filterCategory.isEmpty ? '' : _filterCategory,
                       items: [
                         const DropdownMenuItem(
@@ -177,17 +160,15 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
                 ElevatedButton.icon(
-                  onPressed: _openAddDialog,
+                  onPressed: _openAddExpenseScreen,
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text('Add Expense'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary600,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -495,265 +476,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     );
   }
 
-  Widget _buildAddDialog() {
-    return StatefulBuilder(
-      builder: (ctx, setDialogState) {
-        bool isSaving = false;
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Add Expense',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.gray900,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Category
-                    Text(
-                      'Category *',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.gray700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.gray200),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _formCategory,
-                          items: expenseCategories.entries
-                              .map(
-                                (e) => DropdownMenuItem(
-                                  value: e.key,
-                                  child: Text(e.value.label),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) =>
-                              setDialogState(() => _formCategory = v!),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Amount
-                    Text(
-                      'Amount *',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.gray700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _amountCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: '0',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.gray200),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.gray200),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Date
-                    Text(
-                      'Date',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.gray700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    InkWell(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: ctx,
-                          initialDate: _formDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime.now(),
-                        );
-                        if (picked != null) {
-                          setDialogState(() => _formDate = picked);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.gray200),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                formatDate(_formDate.toIso8601String()),
-                                style: GoogleFonts.inter(
-                                  color: AppColors.gray700,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 18,
-                              color: AppColors.gray500,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Description
-                    Text(
-                      'Description',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.gray700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _descCtrl,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'What was this expense for?',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.gray200),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.gray200),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isSaving
-                                ? null
-                                : () async {
-                                    if (_amountCtrl.text.isEmpty) {
-                                      return;
-                                    }
-
-                                    setDialogState(() => isSaving = true);
-
-                                    try {
-                                      await _api.createExpense({
-                                        'category': _formCategory,
-                                        'amount': double.parse(
-                                          _amountCtrl.text,
-                                        ),
-                                        'description': _descCtrl.text.trim(),
-                                        'date': _formDate.toIso8601String(),
-                                      });
-
-                                      if (ctx.mounted &&
-                                          Navigator.canPop(ctx)) {
-                                        Navigator.pop(ctx);
-                                      }
-
-                                      _resetForm();
-                                      if (mounted) _fetch();
-                                    } catch (e) {
-                                      if (ctx.mounted) {
-                                        setDialogState(() => isSaving = false);
-                                        ScaffoldMessenger.of(ctx).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Failed to add expense: $e',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary600,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: isSaving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text('Add Expense'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _emptyState() {
     return Container(
       width: double.infinity,
@@ -786,7 +508,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: _openAddDialog,
+            onPressed: _openAddExpenseScreen,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary600,
               foregroundColor: Colors.white,

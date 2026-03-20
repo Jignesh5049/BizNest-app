@@ -1,8 +1,15 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Supabase JWT secret (from your Supabase project settings > API > JWT Secret)
-const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'biznest_jwt_secret_key_2024';
+const getJwtSecret = () => {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        throw new Error('Missing required environment variable: JWT_SECRET');
+    }
+    return jwtSecret;
+};
+
+const getSupabaseJwtSecret = () => process.env.SUPABASE_JWT_SECRET || getJwtSecret();
 
 const protect = async (req, res, next) => {
     let token;
@@ -15,7 +22,7 @@ const protect = async (req, res, next) => {
 
             // Try strict JWT verification first (works if JWT_SECRET matches)
             try {
-                const decoded = jwt.verify(token, SUPABASE_JWT_SECRET);
+                const decoded = jwt.verify(token, getSupabaseJwtSecret());
 
                 if (decoded.sub) {
                     user = await User.findOne({ supabaseId: decoded.sub }).select('-password');
@@ -50,7 +57,7 @@ const protect = async (req, res, next) => {
                 } catch (decodeErr) {
                     // Try legacy JWT as last resort
                     try {
-                        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'biznest_jwt_secret_key_2024');
+                        const decoded = jwt.verify(token, getJwtSecret());
                         user = await User.findById(decoded.id).select('-password');
                     } catch (legacyErr) {
                         return res.status(401).json({ message: 'Not authorized, token failed' });
@@ -74,7 +81,7 @@ const protect = async (req, res, next) => {
 };
 
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'biznest_jwt_secret_key_2024', {
+    return jwt.sign({ id }, getJwtSecret(), {
         expiresIn: '30d'
     });
 };

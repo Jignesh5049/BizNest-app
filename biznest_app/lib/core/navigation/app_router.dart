@@ -10,6 +10,7 @@ import '../../features/business/screens/products_screen.dart';
 import '../../features/business/screens/orders_screen.dart';
 import '../../features/business/screens/customers_screen.dart';
 import '../../features/business/screens/expenses_screen.dart';
+import '../../features/business/screens/add_expense_screen.dart';
 import '../../features/business/screens/analytics_screen.dart';
 import '../../features/business/screens/pricing_screen.dart';
 import '../../features/business/screens/invoices_screen.dart';
@@ -31,6 +32,31 @@ import '../../features/customer/screens/customer_profile_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+bool _isBusinessRoute(String location) {
+  const businessPaths = [
+    '/dashboard',
+    '/products',
+    '/orders',
+    '/customers',
+    '/expenses',
+    '/analytics',
+    '/pricing',
+    '/invoices',
+    '/learn',
+    '/settings',
+    '/support',
+    '/onboarding',
+  ];
+
+  return businessPaths.any(
+    (path) => location == path || location.startsWith('$path/'),
+  );
+}
+
+bool _isCustomerRoute(String location) {
+  return location == '/store' || location.startsWith('/store/');
+}
+
 GoRouter createRouter(AuthBloc authBloc) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -39,6 +65,7 @@ GoRouter createRouter(AuthBloc authBloc) {
     redirect: (context, state) {
       final authState = authBloc.state;
       final isAuth = authState is AuthAuthenticated;
+      final location = state.matchedLocation;
       final isLoginRoute = state.matchedLocation == '/login';
       final isSignupRoute = state.matchedLocation == '/signup';
       final isAuthRoute = isLoginRoute || isSignupRoute;
@@ -50,7 +77,26 @@ GoRouter createRouter(AuthBloc authBloc) {
         if (auth.isCustomer) return '/store';
         return '/dashboard';
       }
-      if (isAuth && state.matchedLocation == '/onboarding') {
+      if (isAuth) {
+        final auth = authState;
+        final isBusinessRoute = _isBusinessRoute(location);
+        final isCustomerRoute = _isCustomerRoute(location);
+
+        if (auth.isCustomer && isBusinessRoute) {
+          return '/store';
+        }
+
+        if (auth.isBusinessOwner && isCustomerRoute) {
+          return '/dashboard';
+        }
+
+        if (auth.isBusinessOwner &&
+            !auth.hasOnboarded &&
+            location != '/onboarding') {
+          return '/onboarding';
+        }
+      }
+      if (isAuth && location == '/onboarding') {
         final auth = authState;
         if (auth.hasOnboarded) return '/dashboard';
       }
@@ -91,6 +137,12 @@ GoRouter createRouter(AuthBloc authBloc) {
           GoRoute(
             path: '/expenses',
             builder: (context, state) => const ExpensesScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                builder: (context, state) => const AddExpenseScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: '/analytics',
