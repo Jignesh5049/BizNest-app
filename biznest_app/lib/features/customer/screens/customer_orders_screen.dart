@@ -63,7 +63,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> {
     final filtered = _filtered;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -118,7 +118,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: active ? AppColors.primary600 : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: active ? AppColors.primary600 : AppColors.gray200,
             ),

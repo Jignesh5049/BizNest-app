@@ -360,7 +360,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

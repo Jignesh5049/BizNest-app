@@ -78,28 +78,31 @@ class AppSidebar extends StatelessWidget {
       child: Column(
         children: [
           // Logo Section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.gray100)),
-            ),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/images/favicon.svg',
-                  width: 30,
-                  height: 30,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'BizNest',
-                  style: GoogleFonts.inter(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.gray900,
+          SafeArea(
+            bottom: false,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppColors.gray100)),
+              ),
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/favicon.svg',
+                    width: 30,
+                    height: 30,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Text(
+                    'BizNest',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gray900,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 

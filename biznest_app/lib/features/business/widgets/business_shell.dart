@@ -15,9 +15,17 @@ class BusinessShell extends StatefulWidget {
 class _BusinessShellState extends State<BusinessShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  EdgeInsets _contentPadding(double width, bool isDesktop) {
+    if (isDesktop) return const EdgeInsets.all(20);
+    if (width < 360)
+      return const EdgeInsets.symmetric(horizontal: 8, vertical: 6);
+    return const EdgeInsets.symmetric(horizontal: 10, vertical: 8);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+    final width = MediaQuery.of(context).size.width;
+    final isDesktop = width >= 1024;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -56,8 +64,8 @@ class _BusinessShellState extends State<BusinessShell> {
                     ),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                        horizontal: 12,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         border: Border(
@@ -91,7 +99,7 @@ class _BusinessShellState extends State<BusinessShell> {
                 // Page Content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.all(isDesktop ? 32 : 16),
+                    padding: _contentPadding(width, isDesktop),
                     child: widget.child,
                   ),
                 ),

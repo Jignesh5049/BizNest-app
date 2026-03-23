@@ -200,7 +200,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

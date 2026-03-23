@@ -16,10 +16,12 @@ class CustomerHomeScreen extends StatefulWidget {
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   final _api = ApiService();
+  final _searchCtrl = TextEditingController();
   List<dynamic> _products = [];
   List<dynamic> _businesses = [];
   List<String> _favoriteIds = [];
   bool _loading = true;
+  bool _showBannerSearch = false;
   String _search = '';
   String _category = 'all';
   String _sort = 'newest';
@@ -29,6 +31,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     super.initState();
     _fetchData();
     _fetchFavorites();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -89,7 +97,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -106,69 +114,121 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Discover Local Businesses',
-                  style: GoogleFonts.inter(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Discover Local Businesses',
+                        style: GoogleFonts.inter(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _showBannerSearch = !_showBannerSearch;
+                          if (!_showBannerSearch && _search.isNotEmpty) {
+                            _search = '';
+                            _searchCtrl.clear();
+                            _fetchData();
+                          }
+                        });
+                      },
+                      icon: Icon(
+                        _showBannerSearch ? Icons.close : Icons.search,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Shop from your favorite local stores',
                   style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
                 ),
+                if (_showBannerSearch) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _searchCtrl,
+                    onChanged: (v) {
+                      _search = v;
+                      _fetchData();
+                    },
+                    style: GoogleFonts.inter(color: AppColors.gray900),
+                    decoration: InputDecoration(
+                      hintText: 'Search products...',
+                      hintStyle: GoogleFonts.inter(color: AppColors.gray400),
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // Search
-          TextField(
-            onChanged: (v) {
-              _search = v;
-              _fetchData();
-            },
-            decoration: InputDecoration(
-              hintText: 'Search products...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppColors.gray200),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppColors.gray200),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Category Chips
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
+          // Featured Businesses
+          if (_businesses.isNotEmpty) ...[
+            Row(
               children: [
-                _categoryChip('All', 'all'),
-                ...businessCategories.map(
-                  (c) => _categoryChip(c.label, c.value),
+                Text(
+                  'Featured Businesses',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gray900,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.go('/store/businesses'),
+                  child: Text(
+                    'View All',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AppColors.primary600,
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 90,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _businesses.length > 6 ? 6 : _businesses.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => _businessCard(_businesses[i]),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
 
-          // Sort
+          // Products + Sort
           Row(
             children: [
+              Text(
+                'Products',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray900,
+                ),
+              ),
               const Spacer(),
               PopupMenuButton<String>(
                 onSelected: (v) {
@@ -222,56 +282,32 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // Featured Businesses
-          if (_businesses.isNotEmpty) ...[
-            Row(
+          // Category Chips
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
               children: [
-                Text(
-                  'Featured Businesses',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gray900,
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => context.go('/store/businesses'),
-                  child: Text(
-                    'View All',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: AppColors.primary600,
-                    ),
-                  ),
+                _categoryChip('All', 'all'),
+                ...businessCategories.map(
+                  (c) => _categoryChip(c.label, c.value),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 90,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _businesses.length > 6 ? 6 : _businesses.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
-                itemBuilder: (_, i) => _businessCard(_businesses[i]),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          // Products
-          Text(
-            'Products',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.gray900,
-            ),
           ),
           const SizedBox(height: 12),
+
+          Text(
+            'All Products',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.gray700,
+            ),
+          ),
+          const SizedBox(height: 10),
 
           if (_products.isEmpty)
             _emptyState(
@@ -319,7 +355,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: active ? AppColors.primary600 : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: active ? AppColors.primary600 : AppColors.gray200,
             ),

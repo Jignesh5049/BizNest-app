@@ -323,7 +323,7 @@ class _SupportScreenState extends State<SupportScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: active ? AppColors.primary600 : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: active ? AppColors.primary600 : AppColors.gray200,
           ),

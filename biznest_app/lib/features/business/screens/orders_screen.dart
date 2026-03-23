@@ -424,128 +424,126 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     final orders = _filteredOrders;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Orders',
-                      style: GoogleFonts.inter(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.gray900,
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Orders',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gray900,
                     ),
-                    Text(
-                      '${_orders.length} orders total',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppColors.gray500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: _openAddOrderScreen,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('New Order'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Status Filters
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _statusFilters.map((status) {
-                final isActive = _statusFilter == status;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    selected: isActive,
-                    label: Text(
-                      status[0].toUpperCase() + status.substring(1),
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: isActive
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: isActive
-                            ? AppColors.primary600
-                            : AppColors.gray600,
-                      ),
-                    ),
-                    selectedColor: AppColors.primary50,
-                    checkmarkColor: AppColors.primary600,
-                    onSelected: (_) {
-                      setState(() => _statusFilter = status);
-                      _fetchOrders();
-                    },
                   ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Search
-          TextFormField(
-            decoration: InputDecoration(
-              hintText: 'Search orders...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => setState(() => _searchQuery = ''),
-                    )
-                  : null,
-            ),
-            onChanged: (v) => setState(() => _searchQuery = v),
-          ),
-          const SizedBox(height: 20),
-
-          // Orders List
-          if (_loading)
-            const Center(
-              child: CircularProgressIndicator(color: AppColors.primary500),
-            )
-          else if (orders.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(40),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 60,
-                      color: AppColors.gray300,
+                  Text(
+                    '${_orders.length} orders total',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AppColors.gray500,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No orders found',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        color: AppColors.gray500,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            )
-          else
-            ...orders.map((order) => _buildOrderCard(order)),
-        ],
-      ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _openAddOrderScreen,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('New Order'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Status Filters
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _statusFilters.map((status) {
+              final isActive = _statusFilter == status;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  selected: isActive,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  label: Text(
+                    status[0].toUpperCase() + status.substring(1),
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive
+                          ? AppColors.primary600
+                          : AppColors.gray600,
+                    ),
+                  ),
+                  selectedColor: AppColors.primary50,
+                  checkmarkColor: AppColors.primary600,
+                  onSelected: (_) {
+                    setState(() => _statusFilter = status);
+                    _fetchOrders();
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Search
+        TextFormField(
+          decoration: InputDecoration(
+            hintText: 'Search orders...',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _searchQuery = ''),
+                  )
+                : null,
+          ),
+          onChanged: (v) => setState(() => _searchQuery = v),
+        ),
+        const SizedBox(height: 20),
+
+        // Orders List
+        if (_loading)
+          const Center(
+            child: CircularProgressIndicator(color: AppColors.primary500),
+          )
+        else if (orders.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 60,
+                    color: AppColors.gray300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No orders found',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: AppColors.gray500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...orders.map((order) => _buildOrderCard(order)),
+      ],
     );
   }
 

@@ -231,50 +231,56 @@ class _CustomersScreenState extends State<CustomersScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Search + Add
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                onChanged: (v) => setState(() => _search = v),
-                decoration: InputDecoration(
-                  hintText: 'Search customers...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.gray200),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.gray200),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton.icon(
+        // Add + Search (same flow as product screen)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 520;
+            final actionButton = ElevatedButton.icon(
               onPressed: _openAddCustomerScreen,
-              icon: const Icon(Icons.add, size: 20),
+              icon: const Icon(Icons.add, size: 18),
               label: const Text('Add Customer'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary600,
                 foregroundColor: Colors.white,
+                minimumSize: const Size(0, 48),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
-                  vertical: 14,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
+            );
+
+            if (isCompact) {
+              return SizedBox(width: double.infinity, child: actionButton);
+            }
+
+            return Align(alignment: Alignment.centerRight, child: actionButton);
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          onChanged: (v) => setState(() => _search = v),
+          decoration: InputDecoration(
+            hintText: 'Search customers...',
+            prefixIcon: const Icon(Icons.search, size: 20),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
-          ],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.gray200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.gray200),
+            ),
+          ),
         ),
         const SizedBox(height: 20),
 

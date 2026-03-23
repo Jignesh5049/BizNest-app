@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/helpers.dart';
-import '../cubit/cart_cubit.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -50,7 +48,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -101,23 +99,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             )
           else
-            LayoutBuilder(
-              builder: (ctx, constraints) {
-                final cols = constraints.maxWidth > 700 ? 3 : 2;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: _favorites.map((f) {
-                    final product = f['product'] is Map
-                        ? Map<String, dynamic>.from(f['product'] as Map)
-                        : <String, dynamic>{'_id': f['product'] ?? f['_id']};
-                    return SizedBox(
-                      width: (constraints.maxWidth - 12 * (cols - 1)) / cols,
-                      child: _card(product),
-                    );
-                  }).toList(),
+            Column(
+              children: _favorites.map((f) {
+                final product = f['product'] is Map
+                    ? Map<String, dynamic>.from(f['product'] as Map)
+                    : <String, dynamic>{'_id': f['product'] ?? f['_id']};
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _card(product),
                 );
-              },
+              }).toList(),
             ),
         ],
       ),
@@ -127,24 +118,25 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget _card(Map<String, dynamic> p) {
     final imageUrl = resolveProductImageUrl(p);
     final imageProvider = resolveImageProvider(imageUrl);
+    final category = (p['category'] ?? '').toString();
 
     return GestureDetector(
       onTap: () => context.go('/store/product/${p['_id']}'),
       child: Container(
+        height: 92,
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.gray100),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
-              ),
-              child: AspectRatio(
-                aspectRatio: 1.2,
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 72,
+                height: 72,
                 child: imageProvider != null
                     ? Image(
                         image: imageProvider,
@@ -154,7 +146,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           child: Center(
                             child: Icon(
                               Icons.image,
-                              size: 40,
+                              size: 28,
                               color: AppColors.gray300,
                             ),
                           ),
@@ -165,174 +157,65 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         child: Center(
                           child: Icon(
                             Icons.image,
-                            size: 40,
+                            size: 28,
                             color: AppColors.gray300,
                           ),
                         ),
                       ),
               ),
             ),
-            Align(
-              alignment: Alignment.topRight,
-              child: Transform.translate(
-                offset: const Offset(-8, -18),
-                child: GestureDetector(
-                  onTap: () => _remove(p['_id'] ?? ''),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.favorite,
-                      size: 18,
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     p['name'] ?? '',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.gray900,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    formatCurrency(p['sellingPrice'] ?? p['price'] ?? 0),
+                    category.isNotEmpty ? category : 'Favorite product',
                     style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary600,
+                      fontSize: 12,
+                      color: AppColors.gray500,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
-                  BlocBuilder<CartCubit, CartState>(
-                    builder: (context, cartState) {
-                      final cart = context.read<CartCubit>();
-                      final productId = (p['_id'] ?? '').toString();
-                      final inCart = cartState.isInCart(productId);
-
-                      return SizedBox(
-                        width: double.infinity,
-                        child: inCart
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: AppColors.primary600,
-                                        ),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: IconButton(
-                                              onPressed: () {
-                                                final currentQty = cartState
-                                                    .getQuantity(productId);
-                                                cart.updateQuantity(
-                                                  productId,
-                                                  currentQty - 1,
-                                                );
-                                              },
-                                              icon: Icon(
-                                                Icons.remove,
-                                                size: 16,
-                                                color: AppColors.primary600,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${cartState.getQuantity(productId)}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.gray900,
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: IconButton(
-                                              onPressed: () {
-                                                final currentQty = cartState
-                                                    .getQuantity(productId);
-                                                cart.updateQuantity(
-                                                  productId,
-                                                  currentQty + 1,
-                                                );
-                                              },
-                                              icon: Icon(
-                                                Icons.add,
-                                                size: 16,
-                                                color: AppColors.primary600,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : ElevatedButton(
-                                onPressed: () {
-                                  final businessId = p['businessId'] is Map
-                                      ? p['businessId']['_id']
-                                      : p['businessId'];
-                                  cart.addToCart(p, businessId: businessId);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '${p['name']} added to cart',
-                                      ),
-                                      duration: const Duration(seconds: 1),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary600,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  textStyle: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                child: const Text('Add to Cart'),
-                              ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
                 ],
               ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  formatCurrency(p['sellingPrice'] ?? p['price'] ?? 0),
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () => _remove((p['_id'] ?? '').toString()),
+                  borderRadius: BorderRadius.circular(20),
+                  child: const Padding(
+                    padding: EdgeInsets.all(2),
+                    child: Icon(Icons.favorite, size: 18, color: Colors.red),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -23,6 +23,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? _healthScore;
   bool _loading = true;
 
+  int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim()) ?? 0;
+    return 0;
+  }
+
+  bool get _hasAlerts {
+    final pendingOrders = _toInt(_stats?['orders']?['pending']);
+    final lowStock = _toInt(_stats?['products']?['lowStock']);
+    return pendingOrders > 0 || lowStock > 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +67,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final sectionGap = width < 360 ? 16.0 : 20.0;
     final authState = context.read<AuthBloc>().state;
     final userName = authState is AuthAuthenticated
         ? authState.userName.split(' ').first
@@ -68,104 +83,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      'Welcome back, $userName!',
-                      style: GoogleFonts.inter(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.gray900,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    'Welcome back, $userName!',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gray900,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.waving_hand, color: Colors.amber, size: 22),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$businessName Dashboard',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: AppColors.gray600,
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(width: 8),
+                const Icon(Icons.waving_hand, color: Colors.amber, size: 22),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$businessName Dashboard',
+              style: GoogleFonts.inter(fontSize: 14, color: AppColors.gray600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
 
-              // Show key alerts directly below the welcome section.
-              _buildAlerts(),
-            ],
-          ),
-          const SizedBox(height: 24),
+        // Stats Grid
+        _buildStatsGrid(),
+        SizedBox(height: sectionGap),
 
-          // Stats Grid
-          _buildStatsGrid(),
-          const SizedBox(height: 24),
-
-          // Revenue Chart + Health Score
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 800) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 2, child: _buildRevenueChart()),
-                    const SizedBox(width: 20),
-                    if (_healthScore != null)
-                      Expanded(child: _buildHealthScoreCard()),
-                  ],
-                );
-              }
-              return Column(
+        // Revenue Chart + Health Score
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth > 800) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildRevenueChart(),
-                  if (_healthScore != null) ...[
-                    const SizedBox(height: 20),
-                    _buildHealthScoreCard(),
-                  ],
+                  Expanded(flex: 2, child: _buildRevenueChart()),
+                  const SizedBox(width: 16),
+                  if (_healthScore != null)
+                    Expanded(child: _buildHealthScoreCard()),
                 ],
               );
-            },
-          ),
-          const SizedBox(height: 24),
+            }
+            return Column(
+              children: [
+                _buildRevenueChart(),
+                if (_healthScore != null) ...[
+                  const SizedBox(height: 16),
+                  _buildHealthScoreCard(),
+                ],
+              ],
+            );
+          },
+        ),
+        SizedBox(height: sectionGap),
 
-          // Top Products & Quick Actions
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 800) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildTopProducts()),
-                    const SizedBox(width: 20),
-                    Expanded(child: _buildQuickActions()),
-                  ],
-                );
-              }
-              return Column(
+        // Top Products & Quick Actions
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth > 800) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTopProducts(),
-                  const SizedBox(height: 20),
-                  _buildQuickActions(),
+                  Expanded(child: _buildTopProducts()),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildQuickActions()),
                 ],
               );
-            },
-          ),
-        ],
-      ),
+            }
+            return Column(
+              children: [
+                _buildTopProducts(),
+                const SizedBox(height: 16),
+                _buildQuickActions(),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -219,8 +224,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAlerts() {
-    final pendingOrders = _stats?['orders']?['pending'] ?? 0;
-    final lowStock = _stats?['products']?['lowStock'] ?? 0;
+    final pendingOrders = _toInt(_stats?['orders']?['pending']);
+    final lowStock = _toInt(_stats?['products']?['lowStock']);
     if (pendingOrders == 0 && lowStock == 0) return const SizedBox.shrink();
 
     return Column(

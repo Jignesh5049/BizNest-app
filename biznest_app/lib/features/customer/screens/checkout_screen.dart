@@ -263,7 +263,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return BlocBuilder<CartCubit, CartState>(
       builder: (context, cartState) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

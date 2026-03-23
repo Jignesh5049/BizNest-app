@@ -618,7 +618,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             );
           },
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
 
         // Search Bar
         TextFormField(

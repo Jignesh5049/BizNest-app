@@ -99,7 +99,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final avgRating = (p['ratingAverage'] ?? 0.0) as num;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

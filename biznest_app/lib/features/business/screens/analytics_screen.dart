@@ -54,59 +54,59 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text(
-            'Business Analytics',
-            style: GoogleFonts.inter(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppColors.gray900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Deep insights into your business performance',
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.gray500),
-          ),
-          const SizedBox(height: 24),
+    final width = MediaQuery.of(context).size.width;
+    final sectionGap = width < 360 ? 16.0 : 20.0;
 
-          // KPI Cards
-          _kpiCards(),
-          const SizedBox(height: 24),
-
-          // Revenue vs Expenses Chart
-          _revenueChart(),
-          const SizedBox(height: 24),
-
-          // Bottom Row
-          LayoutBuilder(
-            builder: (ctx, constraints) {
-              final isWide = constraints.maxWidth > 700;
-              return isWide
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _topProductsCard()),
-                        const SizedBox(width: 16),
-                        Expanded(child: _healthScoreCard()),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        _topProductsCard(),
-                        const SizedBox(height: 16),
-                        _healthScoreCard(),
-                      ],
-                    );
-            },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Text(
+          'Business Analytics',
+          style: GoogleFonts.inter(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: AppColors.gray900,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Deep insights into your business performance',
+          style: GoogleFonts.inter(fontSize: 14, color: AppColors.gray500),
+        ),
+        SizedBox(height: sectionGap),
+
+        // KPI Cards
+        _kpiCards(),
+        SizedBox(height: sectionGap),
+
+        // Revenue vs Expenses Chart
+        _revenueChart(),
+        SizedBox(height: sectionGap),
+
+        // Bottom Row
+        LayoutBuilder(
+          builder: (ctx, constraints) {
+            final isWide = constraints.maxWidth > 700;
+            return isWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _topProductsCard()),
+                      const SizedBox(width: 12),
+                      Expanded(child: _healthScoreCard()),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      _topProductsCard(),
+                      const SizedBox(height: 12),
+                      _healthScoreCard(),
+                    ],
+                  );
+          },
+        ),
+      ],
     );
   }
 
