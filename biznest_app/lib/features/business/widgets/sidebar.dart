@@ -3,15 +3,30 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../auth/bloc/auth_bloc.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class AppSidebar extends StatelessWidget {
   final VoidCallback? onClose;
+  final bool showPrimaryItems;
+  static const List<String> _coreRoutes = [
+    '/dashboard',
+    '/products',
+    '/orders',
+    '/customers',
+  ];
+  static const List<String> _drawerOnlyRoutes = [
+    '/expenses',
+    '/analytics',
+    '/pricing',
+    '/invoices',
+    '/learn',
+    '/settings',
+    '/support',
+  ];
 
-  const AppSidebar({super.key, this.onClose});
+  const AppSidebar({super.key, this.onClose, this.showPrimaryItems = true});
 
-  static final List<_NavItem> _navItems = [
+  static final List<_NavItem> _primaryNavItems = [
     _NavItem(
       path: '/dashboard',
       icon: Icons.home_outlined,
@@ -36,12 +51,9 @@ class AppSidebar extends StatelessWidget {
       activeIcon: Icons.people,
       label: 'Customers',
     ),
-    _NavItem(
-      path: '/expenses',
-      icon: Icons.currency_rupee_outlined,
-      activeIcon: Icons.currency_rupee,
-      label: 'Expenses',
-    ),
+  ];
+
+  static final List<_NavItem> _secondaryNavItems = [
     _NavItem(
       path: '/analytics',
       icon: Icons.bar_chart_outlined,
@@ -49,10 +61,10 @@ class AppSidebar extends StatelessWidget {
       label: 'Analytics',
     ),
     _NavItem(
-      path: '/pricing',
-      icon: Icons.calculate_outlined,
-      activeIcon: Icons.calculate,
-      label: 'Pricing Tool',
+      path: '/expenses',
+      icon: Icons.currency_rupee_outlined,
+      activeIcon: Icons.currency_rupee,
+      label: 'Expenses',
     ),
     _NavItem(
       path: '/invoices',
@@ -66,11 +78,20 @@ class AppSidebar extends StatelessWidget {
       activeIcon: Icons.school,
       label: 'Learn',
     ),
+    _NavItem(
+      path: '/pricing',
+      icon: Icons.calculate_outlined,
+      activeIcon: Icons.calculate,
+      label: 'Pricing Tool',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     final currentLocation = GoRouterState.of(context).matchedLocation;
+    final navItems = showPrimaryItems
+        ? [..._primaryNavItems, ..._secondaryNavItems]
+        : _secondaryNavItems;
 
     return Container(
       width: 260,
@@ -89,17 +110,14 @@ class AppSidebar extends StatelessWidget {
                 children: [
                   SvgPicture.asset(
                     'assets/images/favicon.svg',
-                    width: 30,
-                    height: 30,
+                    width: 32,
+                    height: 32,
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'BizNest',
-                    style: GoogleFonts.inter(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.gray900,
-                    ),
+                  const SizedBox(width: 8),
+                  SvgPicture.asset(
+                    'assets/images/logo.svg',
+                    width: 28,
+                    height: 28,
                   ),
                 ],
               ),
@@ -111,7 +129,7 @@ class AppSidebar extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               children: [
-                for (final item in _navItems) ...[
+                for (final item in navItems) ...[
                   _buildNavLink(context, item, currentLocation),
                 ],
               ],
@@ -190,7 +208,9 @@ class AppSidebar extends StatelessWidget {
     _NavItem item,
     String currentLocation,
   ) {
-    final isActive = currentLocation == item.path;
+    final isActive =
+        currentLocation == item.path ||
+        currentLocation.startsWith('${item.path}/');
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -199,7 +219,13 @@ class AppSidebar extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: () {
-            context.go(item.path);
+            var destination = item.path;
+            if (_isDrawerOnlyRoute(item.path) &&
+                _isCoreRoute(currentLocation)) {
+              destination =
+                  '${item.path}?from=${Uri.encodeComponent(currentLocation)}';
+            }
+            context.go(destination);
             onClose?.call();
           },
           borderRadius: BorderRadius.circular(12),
@@ -227,6 +253,16 @@ class AppSidebar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _isCoreRoute(String location) {
+    return _coreRoutes.any(
+      (path) => location == path || location.startsWith('$path/'),
+    );
+  }
+
+  bool _isDrawerOnlyRoute(String path) {
+    return _drawerOnlyRoutes.contains(path);
   }
 }
 

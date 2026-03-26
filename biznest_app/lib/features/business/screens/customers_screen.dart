@@ -2,9 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/utils/helpers.dart';
+import 'package:biznest_core/biznest_core.dart';
 import 'add_customer_screen.dart';
 
 class CustomersScreen extends StatefulWidget {
@@ -68,6 +66,28 @@ class _CustomersScreenState extends State<CustomersScreen> {
           (c['phone'] ?? '').toString().contains(q) ||
           (c['email'] ?? '').toString().toLowerCase().contains(q);
     }).toList();
+  }
+
+  String? _customerCity(Map<String, dynamic> customer) {
+    final address = customer['address'];
+    if (address is Map) {
+      final city = address['city'];
+      if (city != null && city.toString().trim().isNotEmpty) {
+        return city.toString().trim();
+      }
+    }
+
+    final topLevelCity = customer['city'];
+    if (topLevelCity != null && topLevelCity.toString().trim().isNotEmpty) {
+      return topLevelCity.toString().trim();
+    }
+
+    final location = customer['location'];
+    if (location != null && location.toString().trim().isNotEmpty) {
+      return location.toString().trim();
+    }
+
+    return null;
   }
 
   Future<void> _openAddCustomerScreen() async {
@@ -319,6 +339,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Widget _customerCard(Map<String, dynamic> c) {
+    final city = _customerCity(c);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -358,7 +380,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   children: [
                     Row(
                       children: [
-                        Flexible(
+                        Expanded(
                           child: Text(
                             c['name'] ?? '',
                             style: GoogleFonts.inter(
@@ -379,14 +401,18 @@ class _CustomersScreenState extends State<CustomersScreen> {
                         ],
                       ],
                     ),
-                    if ((c['address']?['city'] ?? '').toString().isNotEmpty)
+                    if (city != null) ...[
+                      const SizedBox(height: 2),
                       Text(
-                        c['address']['city'],
+                        city,
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: AppColors.gray500,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -394,11 +420,62 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Contact
-          if ((c['phone'] ?? '').toString().isNotEmpty)
-            _infoRow(Icons.phone_outlined, c['phone']),
-          if ((c['email'] ?? '').toString().isNotEmpty)
-            _infoRow(Icons.email_outlined, c['email']),
+          // Contact - Inline phone and email
+          if ((c['phone'] ?? '').toString().isNotEmpty ||
+              (c['email'] ?? '').toString().isNotEmpty)
+            Row(
+              children: [
+                if ((c['phone'] ?? '').toString().isNotEmpty)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.phone_outlined,
+                            size: 14,
+                            color: AppColors.gray500,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              c['phone'],
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppColors.gray600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if ((c['email'] ?? '').toString().isNotEmpty)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.email_outlined,
+                          size: 14,
+                          color: AppColors.gray500,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            c['email'],
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: AppColors.gray600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
 
           const SizedBox(height: 12),
 
@@ -563,11 +640,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
                               ],
                             ],
                           ),
-                          if ((c['address']?['city'] ?? '')
-                              .toString()
-                              .isNotEmpty)
+                          if (_customerCity(c) != null)
                             Text(
-                              c['address']['city'],
+                              _customerCity(c)!,
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 color: AppColors.gray500,

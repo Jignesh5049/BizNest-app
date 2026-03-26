@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/helpers.dart';
-import '../../../core/services/api_service.dart';
+import 'package:biznest_core/biznest_core.dart';
 import 'add_order_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -19,6 +17,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool _loading = true;
   String _statusFilter = 'all';
   String _searchQuery = '';
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTimeRange? _customRange;
+  DateTime? _minSelectableDate;
 
   static const _statusFilters = [
     'all',
@@ -31,13 +32,219 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   void initState() {
     super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _loadMinimumDate();
+    if (!mounted) return;
+    _fetchOrders();
+  }
+
+  Future<void> _loadMinimumDate() async {
+    try {
+      final response = await _api.getBusiness();
+      final data = response.data;
+      if (data is Map && data['createdAt'] != null) {
+        final parsed = DateTime.tryParse(data['createdAt'].toString());
+        if (parsed != null) {
+          final minDate = DateTime(parsed.year, parsed.month, parsed.day);
+          final selectedMonthStart = DateTime(
+            _selectedMonth.year,
+            _selectedMonth.month,
+            1,
+          );
+          if (selectedMonthStart.isBefore(
+            DateTime(minDate.year, minDate.month),
+          )) {
+            _selectedMonth = DateTime(minDate.year, minDate.month);
+          }
+          _minSelectableDate = minDate;
+        }
+      }
+    } catch (_) {
+      // Keep fallback minimum date when business metadata is unavailable.
+    }
+  }
+
+  DateTime get _effectiveMinSelectableDate =>
+      _minSelectableDate ?? DateTime(2020, 1, 1);
+
+  DateTimeRange _monthRange(DateTime monthDate) {
+    final start = DateTime(monthDate.year, monthDate.month, 1);
+    final end = DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+    return DateTimeRange(start: start, end: end);
+  }
+
+  DateTime _normalizeStart(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTime _normalizeEnd(DateTime value) {
+    return DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
+  }
+
+  Map<String, dynamic> _currentDateWindowParams() {
+    final monthRange = _monthRange(_selectedMonth);
+    final start = _customRange?.start ?? monthRange.start;
+    final end = _customRange?.end ?? monthRange.end;
+    return {
+      'startDate': _normalizeStart(start).toUtc().toIso8601String(),
+      'endDate': _normalizeEnd(end).toUtc().toIso8601String(),
+    };
+  }
+
+  String _monthLabel(DateTime monthDate) {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${monthNames[monthDate.month - 1]} ${monthDate.year}';
+  }
+
+  String _selectedDateLabel() {
+    if (_customRange == null) {
+      return _monthLabel(_selectedMonth);
+    }
+    return '${formatDate(_customRange!.start.toIso8601String())} - ${formatDate(_customRange!.end.toIso8601String())}';
+  }
+
+  Future<void> _openCalendarPicker() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Select month'),
+              onTap: () => Navigator.pop(ctx, 'month'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.date_range_outlined),
+              title: const Text('Select date range'),
+              onTap: () => Navigator.pop(ctx, 'range'),
+            ),
+            if (_customRange != null)
+              ListTile(
+                leading: const Icon(Icons.clear),
+                title: const Text('Clear custom range'),
+                onTap: () => Navigator.pop(ctx, 'clear'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+
+    if (action == 'month') {
+      await _pickMonth();
+      return;
+    }
+    if (action == 'range') {
+      await _pickCustomRange();
+      return;
+    }
+    if (action == 'clear' && _customRange != null) {
+      setState(() {
+        _customRange = null;
+      });
+      _fetchOrders();
+    }
+  }
+
+  Future<void> _pickMonth() async {
+    final minDate = _effectiveMinSelectableDate;
+    final now = DateTime.now();
+    final initialDate = _selectedMonth.isBefore(minDate)
+        ? minDate
+        : (_selectedMonth.isAfter(now) ? now : _selectedMonth);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: minDate,
+      lastDate: now,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _selectedMonth = DateTime(picked.year, picked.month);
+      _customRange = null;
+    });
+    _fetchOrders();
+  }
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final minDate = _effectiveMinSelectableDate;
+    final maxStart = now.isBefore(minDate) ? minDate : now;
+    final initialRange =
+        _customRange ??
+        DateTimeRange(
+          start: DateTime(maxStart.year, maxStart.month, 1),
+          end: now,
+        );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: minDate,
+      lastDate: now,
+      initialDateRange: initialRange,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _customRange = picked;
+      _selectedMonth = DateTime(picked.start.year, picked.start.month);
+    });
+    _fetchOrders();
+  }
+
+  void _goToPreviousMonth() {
+    final minMonth = DateTime(
+      _effectiveMinSelectableDate.year,
+      _effectiveMinSelectableDate.month,
+    );
+    final previousMonth = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month - 1,
+    );
+    if (previousMonth.isBefore(minMonth)) return;
+
+    setState(() {
+      _selectedMonth = previousMonth;
+      _customRange = null;
+    });
+    _fetchOrders();
+  }
+
+  void _goToNextMonth() {
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    final nextMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+    if (nextMonth.isAfter(currentMonth)) return;
+
+    setState(() {
+      _selectedMonth = nextMonth;
+      _customRange = null;
+    });
     _fetchOrders();
   }
 
   Future<void> _fetchOrders() async {
     setState(() => _loading = true);
     try {
-      final params = <String, dynamic>{};
+      final params = <String, dynamic>{..._currentDateWindowParams()};
       if (_statusFilter != 'all') params['status'] = _statusFilter;
       final response = await _api.getOrders(params: params);
       if (mounted) {
@@ -495,6 +702,31 @@ class _OrdersScreenState extends State<OrdersScreen> {
             }).toList(),
           ),
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            IconButton(
+              onPressed: _goToPreviousMonth,
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Previous month',
+            ),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _openCalendarPicker,
+                icon: const Icon(Icons.calendar_month, size: 18),
+                label: Text(
+                  _selectedDateLabel(),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: _goToNextMonth,
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Next month',
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
 
         // Search
@@ -655,7 +887,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
           const Divider(height: 20),
           LayoutBuilder(
             builder: (context, constraints) {
-              final actions = <Widget>[
+              //  m button (extracted separately for right-alignment)
+              final invoiceButton = (order['paymentStatus'] ?? '') == 'paid'
+                  ? TextButton.icon(
+                      onPressed: () => context.go('/invoices/${order['_id']}'),
+                      icon: Icon(
+                        Icons.description,
+                        size: 18,
+                        color: AppColors.primary600,
+                      ),
+                      label: Text(
+                        'Invoice',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary600,
+                        ),
+                      ),
+                    )
+                  : null;
+
+              // Other action buttons
+              final otherActions = <Widget>[
                 if (order['status'] == 'pending')
                   TextButton(
                     onPressed: () => _updateStatus(order['_id'], 'confirmed'),
@@ -689,22 +941,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       ),
                     ),
                   ),
-                if ((order['paymentStatus'] ?? '') == 'paid')
-                  TextButton.icon(
-                    onPressed: () => context.go('/invoices/${order['_id']}'),
-                    icon: Icon(
-                      Icons.description,
-                      size: 18,
-                      color: AppColors.primary600,
-                    ),
-                    label: Text(
-                      'Invoice',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary600,
-                      ),
-                    ),
-                  ),
               ];
 
               final totalText = Text(
@@ -716,32 +952,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ),
               );
 
-              if (constraints.maxWidth < 380) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    totalText,
-                    if (actions.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(spacing: 4, runSpacing: 4, children: actions),
-                    ],
-                  ],
-                );
-              }
-
-              return Row(
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: totalText),
-                  if (actions.isNotEmpty)
-                    Flexible(
-                      child: Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: actions,
+                  Row(
+                    children: [
+                      if (invoiceButton != null) invoiceButton,
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 24),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: totalText,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                  if (otherActions.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 4, runSpacing: 4, children: otherActions),
+                  ],
                 ],
               );
             },

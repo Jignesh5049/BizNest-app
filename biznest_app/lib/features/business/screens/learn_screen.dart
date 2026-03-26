@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class LearnScreen extends StatelessWidget {
   const LearnScreen({super.key});
@@ -245,3 +245,5 @@ class LearnScreen extends StatelessWidget {
     );
   }
 }
+
+

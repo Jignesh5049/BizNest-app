@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'core/theme/app_theme.dart';
+import 'package:biznest_core/biznest_core.dart';
 import 'core/navigation/app_router.dart';
-import 'features/auth/bloc/auth_bloc.dart';
-import 'features/customer/cubit/cart_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,21 +33,18 @@ class BizNestApp extends StatefulWidget {
 
 class _BizNestAppState extends State<BizNestApp> {
   late final AuthBloc _authBloc;
-  late final CartCubit _cartCubit;
   late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
     _authBloc = AuthBloc()..add(AuthCheckRequested());
-    _cartCubit = CartCubit();
     _router = createRouter(_authBloc);
   }
 
   @override
   void dispose() {
     _authBloc.close();
-    _cartCubit.close();
     _router.dispose();
     super.dispose();
   }
@@ -57,10 +52,7 @@ class _BizNestAppState extends State<BizNestApp> {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: _authBloc),
-        BlocProvider.value(value: _cartCubit),
-      ],
+      providers: [BlocProvider.value(value: _authBloc)],
       child: MaterialApp.router(
         title: 'BizNest',
         debugShowCheckedModeBanner: false,

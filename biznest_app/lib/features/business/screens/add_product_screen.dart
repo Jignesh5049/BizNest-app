@@ -3,8 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/services/api_service.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class AddProductScreen extends StatefulWidget {
   final Map<String, dynamic>? product;
@@ -395,3 +394,5 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 }
+
+

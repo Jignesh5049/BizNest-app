@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/helpers.dart';
-import '../../../core/services/api_service.dart';
-import '../bloc/auth_bloc.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -85,31 +83,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 24),
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary600.withValues(alpha: 0.3),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.store_outlined,
-                        size: 40,
-                        color: Colors.white,
+                    // Header logo (same style as signup)
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        alignment: Alignment.center,
+                        child: SvgPicture.asset(
+                          'assets/images/logo.svg',
+                          width: 52,
+                          height: 52,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     Text(
                       'Set Up Your Business',
                       style: GoogleFonts.inter(
-                        fontSize: 24,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: AppColors.gray900,
                       ),
@@ -118,11 +109,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Text(
                       'Tell us about your business to get started',
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: AppColors.gray500,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 12),
 
                     // Form Card
                     Container(
@@ -138,7 +129,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildLabel('Business Name *'),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             TextFormField(
                               controller: _businessNameController,
                               decoration: const InputDecoration(
@@ -149,10 +140,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   ? 'Business name is required'
                                   : null,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
 
                             _buildLabel('Category *'),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             DropdownButtonFormField<String>(
                               initialValue: _selectedCategory,
                               decoration: const InputDecoration(
@@ -168,10 +159,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 () => _selectedCategory = v ?? 'retail',
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
 
                             _buildLabel('Description'),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             TextFormField(
                               controller: _descriptionController,
                               maxLines: 3,
@@ -183,10 +174,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
 
                             _buildLabel('Phone'),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
@@ -195,10 +186,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 prefixIcon: Icon(Icons.phone_outlined),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
 
                             _buildLabel('Address'),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             TextFormField(
                               controller: _addressController,
                               maxLines: 2,

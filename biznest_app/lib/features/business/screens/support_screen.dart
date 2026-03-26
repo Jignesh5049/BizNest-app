@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/utils/helpers.dart';
+import 'package:dio/dio.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -13,10 +12,13 @@ class SupportScreen extends StatefulWidget {
 
 class _SupportScreenState extends State<SupportScreen> {
   final _api = ApiService();
+  static const _statusFilters = ['all', 'open', 'in_progress', 'resolved'];
   List<dynamic> _tickets = [];
   bool _loading = true;
   String _filter = 'all';
   String _search = '';
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTimeRange? _customRange;
   final _replyCtrl = TextEditingController();
 
   @override
@@ -33,7 +35,8 @@ class _SupportScreenState extends State<SupportScreen> {
 
   Future<void> _fetch() async {
     try {
-      final res = await _api.getSupportTickets();
+      final dateParams = _currentDateWindowParams();
+      final res = await _api.getSupportTickets(params: dateParams);
       setState(() {
         _tickets = res.data is List ? res.data : [];
         _loading = false;
@@ -41,6 +44,188 @@ class _SupportScreenState extends State<SupportScreen> {
     } catch (e) {
       setState(() => _loading = false);
     }
+  }
+
+  DateTimeRange _monthRange(DateTime monthDate) {
+    final start = DateTime(monthDate.year, monthDate.month, 1);
+    final end = DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+    return DateTimeRange(start: start, end: end);
+  }
+
+  String _monthLabel(DateTime monthDate) {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${monthNames[monthDate.month - 1]} ${monthDate.year}';
+  }
+
+  String _dateOnly(DateTime value) {
+    final y = value.year.toString().padLeft(4, '0');
+    final m = value.month.toString().padLeft(2, '0');
+    final d = value.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  Map<String, dynamic> _currentDateWindowParams() {
+    if (_customRange != null) {
+      return {
+        'startDate': _dateOnly(_customRange!.start),
+        'endDate': _dateOnly(_customRange!.end),
+      };
+    }
+
+    final monthRange = _monthRange(_selectedMonth);
+    return {
+      'startDate': _dateOnly(monthRange.start),
+      'endDate': _dateOnly(monthRange.end),
+    };
+  }
+
+  DateTime get _effectiveMinSelectableDate => DateTime(2020, 1, 1);
+
+  String _selectedDateLabel() {
+    if (_customRange != null) {
+      return '${_monthLabel(_customRange!.start)} - ${_monthLabel(_customRange!.end)}';
+    }
+    return _monthLabel(_selectedMonth);
+  }
+
+  Future<void> _openCalendarPicker() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Select month'),
+              onTap: () => Navigator.pop(ctx, 'month'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.date_range_outlined),
+              title: const Text('Select date range'),
+              onTap: () => Navigator.pop(ctx, 'range'),
+            ),
+            if (_customRange != null)
+              ListTile(
+                leading: const Icon(Icons.clear),
+                title: const Text('Clear custom range'),
+                onTap: () => Navigator.pop(ctx, 'clear'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+
+    if (action == 'month') {
+      await _pickMonth();
+      return;
+    }
+    if (action == 'range') {
+      await _pickCustomRange();
+      return;
+    }
+    if (action == 'clear' && _customRange != null) {
+      setState(() {
+        _customRange = null;
+      });
+      _fetch();
+    }
+  }
+
+  Future<void> _pickMonth() async {
+    final minDate = _effectiveMinSelectableDate;
+    final now = DateTime.now();
+    final initialDate = _selectedMonth.isBefore(minDate)
+        ? minDate
+        : (_selectedMonth.isAfter(now) ? now : _selectedMonth);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: minDate,
+      lastDate: now,
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _selectedMonth = DateTime(picked.year, picked.month);
+      _customRange = null;
+      _loading = true;
+    });
+    _fetch();
+  }
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final minDate = _effectiveMinSelectableDate;
+    final maxStart = now.isBefore(minDate) ? minDate : now;
+    final initialRange =
+        _customRange ??
+        DateTimeRange(
+          start: DateTime(maxStart.year, maxStart.month, 1),
+          end: now,
+        );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: minDate,
+      lastDate: now,
+      initialDateRange: initialRange,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _customRange = picked;
+      _selectedMonth = DateTime(picked.start.year, picked.start.month);
+      _loading = true;
+    });
+    _fetch();
+  }
+
+  void _goToPreviousMonth() {
+    final minMonth = DateTime(
+      _effectiveMinSelectableDate.year,
+      _effectiveMinSelectableDate.month,
+    );
+    final previousMonth = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month - 1,
+    );
+    if (previousMonth.isBefore(minMonth)) return;
+
+    setState(() {
+      _selectedMonth = previousMonth;
+      _customRange = null;
+      _loading = true;
+    });
+    _fetch();
+  }
+
+  void _goToNextMonth() {
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    final nextMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+    if (nextMonth.isAfter(currentMonth)) return;
+
+    setState(() {
+      _selectedMonth = nextMonth;
+      _customRange = null;
+      _loading = true;
+    });
+    _fetch();
   }
 
   List<dynamic> get _filtered {
@@ -65,16 +250,23 @@ class _SupportScreenState extends State<SupportScreen> {
     if (_replyCtrl.text.trim().isEmpty) return;
     try {
       await _api.replySupportTicket(ticketId, {
-        'message': _replyCtrl.text.trim(),
+        'replyMessage': _replyCtrl.text.trim(),
       });
       _replyCtrl.clear();
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       _fetch();
     } catch (e) {
+      String errorText = 'Failed to send reply. Please try again.';
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          errorText = data['message'].toString();
+        }
+      }
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to send reply: $e')));
+        ).showSnackBar(SnackBar(content: Text(errorText)));
       }
     }
   }
@@ -253,7 +445,7 @@ class _SupportScreenState extends State<SupportScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$openCount open • $inProgressCount in progress',
+                    '$openCount open • $inProgressCount in progress • ${_monthLabel(_selectedMonth)}',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: AppColors.gray500,
@@ -266,39 +458,91 @@ class _SupportScreenState extends State<SupportScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Filter chips + Search
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        // Search
+        SizedBox(
+          width: double.infinity,
+          child: TextField(
+            onChanged: (v) => setState(() => _search = v),
+            decoration: InputDecoration(
+              hintText: 'Search tickets...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.gray200),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.gray200),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Inline scrollable filters (same pattern as orders)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _statusFilters.map((status) {
+              final isActive = _filter == status;
+              final label = status == 'in_progress'
+                  ? 'In Progress'
+                  : status[0].toUpperCase() + status.substring(1);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  selected: isActive,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  label: Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive
+                          ? AppColors.primary600
+                          : AppColors.gray600,
+                    ),
+                  ),
+                  selectedColor: AppColors.primary50,
+                  checkmarkColor: AppColors.primary600,
+                  onSelected: (_) => setState(() => _filter = status),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Calendar controls (same style as analytics)
+        Row(
           children: [
-            _filterChip('All', 'all'),
-            _filterChip('Open', 'open'),
-            _filterChip('In Progress', 'in_progress'),
-            _filterChip('Resolved', 'resolved'),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 220,
-              child: TextField(
-                onChanged: (v) => setState(() => _search = v),
-                decoration: InputDecoration(
-                  hintText: 'Search tickets...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.gray200),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.gray200),
-                  ),
+            IconButton(
+              onPressed: _goToPreviousMonth,
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Previous month',
+            ),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _openCalendarPicker,
+                icon: const Icon(Icons.calendar_month, size: 18),
+                label: Text(
+                  _selectedDateLabel(),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+            ),
+            IconButton(
+              onPressed: _goToNextMonth,
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Next month',
             ),
           ],
         ),
@@ -312,31 +556,6 @@ class _SupportScreenState extends State<SupportScreen> {
             (t) => _ticketCard(Map<String, dynamic>.from(t as Map)),
           ),
       ],
-    );
-  }
-
-  Widget _filterChip(String label, String value) {
-    final active = _filter == value;
-    return GestureDetector(
-      onTap: () => setState(() => _filter = value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: active ? AppColors.primary600 : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: active ? AppColors.primary600 : AppColors.gray200,
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: active ? Colors.white : AppColors.gray600,
-          ),
-        ),
-      ),
     );
   }
 

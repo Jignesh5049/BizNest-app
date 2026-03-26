@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  biznest_core:
+    path: ../biznest_core
   supabase_flutter: ^2.8.4
   dio: ^5.7.0
   flutter_bloc: ^9.1.1

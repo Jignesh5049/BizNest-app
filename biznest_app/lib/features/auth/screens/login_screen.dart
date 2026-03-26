@@ -3,8 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/app_colors.dart';
-import '../bloc/auth_bloc.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -139,18 +138,18 @@ class _LoginScreenState extends State<LoginScreen>
                                 alignment: Alignment.center,
                                 child: SvgPicture.asset(
                                   'assets/images/logo.svg',
-                                  width: 86,
-                                  height: 86,
+                                  width: 64,
+                                  height: 64,
                                   fit: BoxFit.contain,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
                           Text(
                             'Welcome Back',
                             style: GoogleFonts.inter(
-                              fontSize: 28,
+                              fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: AppColors.gray900,
                             ),

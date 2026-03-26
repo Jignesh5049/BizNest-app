@@ -3,8 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/theme/app_colors.dart';
-import '../bloc/auth_bloc.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -103,17 +102,17 @@ class _SignupScreenState extends State<SignupScreen>
                             alignment: Alignment.center,
                             child: SvgPicture.asset(
                               'assets/images/logo.svg',
-                              width: 86,
-                              height: 86,
+                              width: 52,
+                              height: 52,
                               fit: BoxFit.contain,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 3),
                         Text(
                           'Create Account',
                           style: GoogleFonts.inter(
-                            fontSize: 28,
+                            fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: AppColors.gray900,
                           ),
@@ -219,27 +218,6 @@ class _SignupScreenState extends State<SignupScreen>
                                   },
                                 ),
                                 const SizedBox(height: 16),
-                                _buildLabel('Account Type'),
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.gray100,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      _buildSignupRoleTab(
-                                        'Business Owner',
-                                        'business',
-                                      ),
-                                      _buildSignupRoleTab(
-                                        'Customer',
-                                        'customer',
-                                      ),
-                                    ],
-                                  ),
-                                ),
                                 const SizedBox(height: 24),
 
                                 // Signup Button
@@ -348,47 +326,6 @@ class _SignupScreenState extends State<SignupScreen>
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: AppColors.gray700,
-      ),
-    );
-  }
-
-  Widget _buildSignupRoleTab(String label, String role) {
-    final isSelected = _selectedRole == role;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedRole = role;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            gradient: isSelected ? AppColors.primaryGradient : null,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary600.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.gray600,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

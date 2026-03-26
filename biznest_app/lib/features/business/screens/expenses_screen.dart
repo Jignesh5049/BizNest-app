@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/utils/helpers.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -21,6 +19,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   Map<String, dynamic> _summary = {'summary': [], 'totalExpenses': 0};
   bool _loading = true;
   String _filterCategory = '';
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTimeRange? _customRange;
+  DateTime? _minSelectableDate;
 
   static const _chartColors = [
     Color(0xFF0ea5e9),
@@ -37,19 +38,52 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   @override
   void initState() {
     super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _loadMinimumDate();
+    if (!mounted) return;
     _fetch();
+  }
+
+  Future<void> _loadMinimumDate() async {
+    try {
+      final response = await _api.getBusiness();
+      final data = response.data;
+      if (data is Map && data['createdAt'] != null) {
+        final parsed = DateTime.tryParse(data['createdAt'].toString());
+        if (parsed != null) {
+          final minDate = DateTime(parsed.year, parsed.month, parsed.day);
+          final selectedMonthStart = DateTime(
+            _selectedMonth.year,
+            _selectedMonth.month,
+            1,
+          );
+          if (selectedMonthStart.isBefore(
+            DateTime(minDate.year, minDate.month),
+          )) {
+            _selectedMonth = DateTime(minDate.year, minDate.month);
+          }
+          _minSelectableDate = minDate;
+        }
+      }
+    } catch (_) {
+      // Keep fallback minimum date when business metadata is unavailable.
+    }
   }
 
   Future<void> _fetch() async {
     try {
-      final params = _filterCategory.isNotEmpty
-          ? {'category': _filterCategory}
-          : null;
+      final dateParams = _currentDateWindowParams();
+      final baseParams = <String, dynamic>{...dateParams};
+      if (_filterCategory.isNotEmpty) {
+        baseParams['category'] = _filterCategory;
+      }
+
       final results = await Future.wait([
-        _api.getExpenses(
-          params: params != null ? Map<String, dynamic>.from(params) : null,
-        ),
-        _api.getExpensesSummary(),
+        _api.getExpenses(params: baseParams),
+        _api.getExpensesSummary(params: dateParams),
       ]);
       setState(() {
         _expenses = results[0].data is List ? results[0].data : [];
@@ -92,6 +126,193 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     if (created == true && mounted) {
       _fetch();
     }
+  }
+
+  DateTimeRange _monthRange(DateTime monthDate) {
+    final start = DateTime(monthDate.year, monthDate.month, 1);
+    final end = DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+    return DateTimeRange(start: start, end: end);
+  }
+
+  String _monthLabel(DateTime monthDate) {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${monthNames[monthDate.month - 1]} ${monthDate.year}';
+  }
+
+  DateTime get _effectiveMinSelectableDate =>
+      _minSelectableDate ?? DateTime(2020, 1, 1);
+
+  DateTime _normalizeStart(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTime _normalizeEnd(DateTime value) {
+    return DateTime(value.year, value.month, value.day, 23, 59, 59, 999);
+  }
+
+  String _dateOnly(DateTime value) {
+    final y = value.year.toString().padLeft(4, '0');
+    final m = value.month.toString().padLeft(2, '0');
+    final d = value.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  Map<String, dynamic> _currentDateWindowParams() {
+    final monthRange = _monthRange(_selectedMonth);
+    final start = _customRange?.start ?? monthRange.start;
+    final end = _customRange?.end ?? monthRange.end;
+    return {
+      'startDate': _dateOnly(_normalizeStart(start)),
+      'endDate': _dateOnly(_normalizeEnd(end)),
+    };
+  }
+
+  String _selectedDateLabel() {
+    if (_customRange == null) {
+      return _monthLabel(_selectedMonth);
+    }
+    return '${formatDate(_customRange!.start.toIso8601String())} - ${formatDate(_customRange!.end.toIso8601String())}';
+  }
+
+  Future<void> _openCalendarPicker() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Select month'),
+              onTap: () => Navigator.pop(ctx, 'month'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.date_range_outlined),
+              title: const Text('Select date range'),
+              onTap: () => Navigator.pop(ctx, 'range'),
+            ),
+            if (_customRange != null)
+              ListTile(
+                leading: const Icon(Icons.clear),
+                title: const Text('Clear custom range'),
+                onTap: () => Navigator.pop(ctx, 'clear'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+
+    if (action == 'month') {
+      await _pickMonth();
+      return;
+    }
+    if (action == 'range') {
+      await _pickCustomRange();
+      return;
+    }
+    if (action == 'clear' && _customRange != null) {
+      setState(() {
+        _customRange = null;
+        _loading = true;
+      });
+      _fetch();
+    }
+  }
+
+  Future<void> _pickMonth() async {
+    final minDate = _effectiveMinSelectableDate;
+    final now = DateTime.now();
+    final initialDate = _selectedMonth.isBefore(minDate)
+        ? minDate
+        : (_selectedMonth.isAfter(now) ? now : _selectedMonth);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: minDate,
+      lastDate: now,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _selectedMonth = DateTime(picked.year, picked.month);
+      _customRange = null;
+      _loading = true;
+    });
+    _fetch();
+  }
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final minDate = _effectiveMinSelectableDate;
+    final maxStart = now.isBefore(minDate) ? minDate : now;
+    final initialRange =
+        _customRange ??
+        DateTimeRange(
+          start: DateTime(maxStart.year, maxStart.month, 1),
+          end: now,
+        );
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: minDate,
+      lastDate: now,
+      initialDateRange: initialRange,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _customRange = picked;
+      _selectedMonth = DateTime(picked.start.year, picked.start.month);
+      _loading = true;
+    });
+    _fetch();
+  }
+
+  void _goToPreviousMonth() {
+    final minMonth = DateTime(
+      _effectiveMinSelectableDate.year,
+      _effectiveMinSelectableDate.month,
+    );
+    final previousMonth = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month - 1,
+    );
+    if (previousMonth.isBefore(minMonth)) return;
+
+    setState(() {
+      _selectedMonth = previousMonth;
+      _customRange = null;
+      _loading = true;
+    });
+    _fetch();
+  }
+
+  void _goToNextMonth() {
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    final nextMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+    if (nextMonth.isAfter(currentMonth)) return;
+
+    setState(() {
+      _selectedMonth = nextMonth;
+      _customRange = null;
+      _loading = true;
+    });
+    _fetch();
   }
 
   @override
@@ -161,6 +382,31 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _goToPreviousMonth,
+                      icon: const Icon(Icons.chevron_left),
+                      tooltip: 'Previous month',
+                    ),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _openCalendarPicker,
+                        icon: const Icon(Icons.calendar_month, size: 18),
+                        label: Text(
+                          _selectedDateLabel(),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _goToNextMonth,
+                      icon: const Icon(Icons.chevron_right),
+                      tooltip: 'Next month',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: _openAddExpenseScreen,
                   icon: const Icon(Icons.add, size: 20),
@@ -188,9 +434,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _totalCard(totalExpenses),
+                      Expanded(flex: 5, child: _totalCard(totalExpenses)),
                       const SizedBox(width: 16),
-                      Expanded(child: _chartCard(summaryList)),
+                      Expanded(flex: 7, child: _chartCard(summaryList)),
                     ],
                   )
                 : Column(
@@ -212,7 +458,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   Widget _totalCard(dynamic total) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 280),
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -235,26 +481,28 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Total Expenses',
-                style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
-              ),
-              Text(
-                formatCurrency(total),
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Expenses',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
                 ),
-              ),
-              Text(
-                'This Month',
-                style: GoogleFonts.inter(fontSize: 11, color: Colors.white60),
-              ),
-            ],
+                Text(
+                  formatCurrency(total),
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  _selectedDateLabel(),
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.white60),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -297,7 +545,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'No expense data for this month',
+                  _customRange == null
+                      ? 'No expense data for selected month'
+                      : 'No expense data for selected duration',
                   style: GoogleFonts.inter(color: AppColors.gray500),
                 ),
               ),

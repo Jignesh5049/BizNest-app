@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class AddCustomerScreen extends StatefulWidget {
   final Map<String, dynamic>? customer;
@@ -243,3 +242,5 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     );
   }
 }
+
+

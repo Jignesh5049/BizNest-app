@@ -3,10 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/helpers.dart';
-import '../../../core/services/api_service.dart';
-import '../../auth/bloc/auth_bloc.dart';
+import 'package:biznest_core/biznest_core.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -68,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final sectionGap = width < 360 ? 16.0 : 20.0;
+    final sectionGap = width < 360 ? 12.0 : 16.0;
     final authState = context.read<AuthBloc>().state;
     final userName = authState is AuthAuthenticated
         ? authState.userName.split(' ').first
@@ -83,7 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
@@ -115,10 +112,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // Stats Grid
         _buildStatsGrid(),
+        SizedBox(height: sectionGap),
+
+        // Alerts (Pending Orders & Low Stock)
+        _buildAlerts(),
         SizedBox(height: sectionGap),
 
         // Revenue Chart + Health Score
@@ -171,6 +172,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         ),
       ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.hasBoundedHeight && constraints.maxHeight < 620) {
+          return SingleChildScrollView(child: content);
+        }
+        return content;
+      },
     );
   }
 
