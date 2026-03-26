@@ -12,6 +12,24 @@ const getBusinessId = async (userId) => {
     return business?._id;
 };
 
+const parseDateInput = (value) => {
+    if (!value) return null;
+
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const toStartOfDay = (value) =>
+    new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
+
+const toEndOfDay = (value) =>
+    new Date(value.getFullYear(), value.getMonth(), value.getDate(), 23, 59, 59, 999);
+
 // @route   GET /api/support
 // @desc    Get support tickets for business
 // @access  Private (Business)
@@ -23,7 +41,28 @@ router.get('/', async (req, res) => {
         }
 
         const query = { businessId };
-        if (req.query.status) query.status = req.query.status;
+        const { status, startDate, endDate } = req.query;
+
+        if (status) query.status = status;
+
+        if (startDate || endDate) {
+            const parsedStart = parseDateInput(startDate);
+            const parsedEnd = parseDateInput(endDate);
+
+            if (startDate && !parsedStart) {
+                return res.status(400).json({ message: 'Invalid startDate' });
+            }
+            if (endDate && !parsedEnd) {
+                return res.status(400).json({ message: 'Invalid endDate' });
+            }
+            if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+                return res.status(400).json({ message: 'startDate cannot be after endDate' });
+            }
+
+            query.createdAt = {};
+            if (parsedStart) query.createdAt.$gte = toStartOfDay(parsedStart);
+            if (parsedEnd) query.createdAt.$lte = toEndOfDay(parsedEnd);
+        }
 
         const tickets = await SupportTicket.find(query)
             .populate('orderId', 'orderNumber createdAt')
