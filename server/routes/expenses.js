@@ -11,6 +11,24 @@ const getBusinessId = async (userId) => {
     return business?._id;
 };
 
+const parseDateInput = (value) => {
+    if (!value) return null;
+
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const toStartOfDay = (value) =>
+    new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
+
+const toEndOfDay = (value) =>
+    new Date(value.getFullYear(), value.getMonth(), value.getDate(), 23, 59, 59, 999);
+
 // @route   GET /api/expenses
 // @desc    Get all expenses
 // @access  Private
@@ -26,9 +44,21 @@ router.get('/', async (req, res) => {
 
         if (category) query.category = category;
         if (startDate || endDate) {
+            const parsedStart = parseDateInput(startDate);
+            const parsedEnd = parseDateInput(endDate);
+            if (startDate && !parsedStart) {
+                return res.status(400).json({ message: 'Invalid startDate' });
+            }
+            if (endDate && !parsedEnd) {
+                return res.status(400).json({ message: 'Invalid endDate' });
+            }
+            if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+                return res.status(400).json({ message: 'startDate cannot be after endDate' });
+            }
+
             query.date = {};
-            if (startDate) query.date.$gte = new Date(startDate);
-            if (endDate) query.date.$lte = new Date(endDate);
+            if (parsedStart) query.date.$gte = toStartOfDay(parsedStart);
+            if (parsedEnd) query.date.$lte = toEndOfDay(parsedEnd);
         }
 
         const expenses = await Expense.find(query)
@@ -51,19 +81,38 @@ router.get('/summary', async (req, res) => {
             return res.status(404).json({ message: 'Business not found' });
         }
 
-        const { month, year } = req.query;
-        const now = new Date();
-        const targetMonth = month ? parseInt(month) - 1 : now.getMonth();
-        const targetYear = year ? parseInt(year) : now.getFullYear();
+        const { month, year, startDate, endDate } = req.query;
+        let rangeStart;
+        let rangeEnd;
 
-        const startDate = new Date(targetYear, targetMonth, 1);
-        const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+        if (startDate || endDate) {
+            const parsedStart = parseDateInput(startDate);
+            const parsedEnd = parseDateInput(endDate);
+            if (startDate && !parsedStart) {
+                return res.status(400).json({ message: 'Invalid startDate' });
+            }
+            if (endDate && !parsedEnd) {
+                return res.status(400).json({ message: 'Invalid endDate' });
+            }
+            if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+                return res.status(400).json({ message: 'startDate cannot be after endDate' });
+            }
+
+            rangeStart = parsedStart ? toStartOfDay(parsedStart) : new Date('2000-01-01T00:00:00.000Z');
+            rangeEnd = parsedEnd ? toEndOfDay(parsedEnd) : new Date();
+        } else {
+            const now = new Date();
+            const targetMonth = month ? parseInt(month, 10) - 1 : now.getMonth();
+            const targetYear = year ? parseInt(year, 10) : now.getFullYear();
+            rangeStart = new Date(targetYear, targetMonth, 1);
+            rangeEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+        }
 
         const summary = await Expense.aggregate([
             {
                 $match: {
                     businessId,
-                    date: { $gte: startDate, $lte: endDate }
+                    date: { $gte: rangeStart, $lte: rangeEnd }
                 }
             },
             {
@@ -77,7 +126,12 @@ router.get('/summary', async (req, res) => {
 
         const totalExpenses = summary.reduce((acc, cat) => acc + cat.total, 0);
 
-        res.json({ summary, totalExpenses, month: targetMonth + 1, year: targetYear });
+        res.json({
+            summary,
+            totalExpenses,
+            startDate: rangeStart,
+            endDate: rangeEnd
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -13,6 +13,15 @@ const getBusinessId = async (userId) => {
     return business?._id;
 };
 
+const parseDateInput = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const toEndOfDay = (value) =>
+    new Date(value.getFullYear(), value.getMonth(), value.getDate(), 23, 59, 59, 999);
+
 // @route   GET /api/orders
 // @desc    Get all orders
 // @access  Private
@@ -23,11 +32,28 @@ router.get('/', async (req, res) => {
             return res.status(404).json({ message: 'Business not found' });
         }
 
-        const { status, paymentStatus, limit = 50 } = req.query;
+        const { status, paymentStatus, startDate, endDate, limit = 50 } = req.query;
         const query = { businessId };
 
         if (status) query.status = status;
         if (paymentStatus) query.paymentStatus = paymentStatus;
+        if (startDate || endDate) {
+            const parsedStart = parseDateInput(startDate);
+            const parsedEnd = parseDateInput(endDate);
+            if (startDate && !parsedStart) {
+                return res.status(400).json({ message: 'Invalid startDate' });
+            }
+            if (endDate && !parsedEnd) {
+                return res.status(400).json({ message: 'Invalid endDate' });
+            }
+            if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+                return res.status(400).json({ message: 'startDate cannot be after endDate' });
+            }
+
+            query.createdAt = {};
+            if (parsedStart) query.createdAt.$gte = parsedStart;
+            if (parsedEnd) query.createdAt.$lte = toEndOfDay(parsedEnd);
+        }
 
         const orders = await Order.find(query)
             .populate('customerId', 'name phone email')

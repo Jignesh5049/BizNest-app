@@ -14,6 +14,70 @@ const getBusinessId = async (userId) => {
     return business?._id;
 };
 
+const parseDateInput = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const toEndOfDay = (value) =>
+    new Date(value.getFullYear(), value.getMonth(), value.getDate(), 23, 59, 59, 999);
+
+const getDateFilter = (query) => {
+    const { month, year, startDate, endDate } = query;
+    const hasCustomRange = Boolean(startDate || endDate);
+
+    if (hasCustomRange) {
+        const parsedStart = parseDateInput(startDate);
+        const parsedEnd = parseDateInput(endDate);
+        if (startDate && !parsedStart) {
+            const error = new Error('Invalid startDate');
+            error.statusCode = 400;
+            throw error;
+        }
+        if (endDate && !parsedEnd) {
+            const error = new Error('Invalid endDate');
+            error.statusCode = 400;
+            throw error;
+        }
+        if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+            const error = new Error('startDate cannot be after endDate');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const rangeStart = parsedStart || new Date('2000-01-01T00:00:00.000Z');
+        const rangeEnd = parsedEnd ? toEndOfDay(parsedEnd) : new Date();
+        return {
+            rangeStart,
+            rangeEnd,
+            hasCustomRange,
+            anchorMonth: new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1)
+        };
+    }
+
+    const now = new Date();
+    const targetMonth = month ? parseInt(month, 10) - 1 : now.getMonth();
+    const targetYear = year ? parseInt(year, 10) : now.getFullYear();
+    const rangeStart = new Date(targetYear, targetMonth, 1);
+    const rangeEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+
+    return {
+        rangeStart,
+        rangeEnd,
+        hasCustomRange,
+        anchorMonth: new Date(targetYear, targetMonth, 1)
+    };
+};
+
+const toMonthKey = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
+
+const monthLabel = (year, month) => {
+    const monthDate = new Date(year, month - 1, 1);
+    const shortMonth = monthDate.toLocaleString('default', { month: 'short' });
+    return `${shortMonth} ${String(year).slice(-2)}`;
+};
+
 // @route   GET /api/analytics/dashboard
 // @desc    Get dashboard stats
 // @access  Private
@@ -24,10 +88,18 @@ router.get('/dashboard', async (req, res) => {
             return res.status(404).json({ message: 'Business not found' });
         }
 
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        const { rangeStart, rangeEnd, hasCustomRange } = getDateFilter(req.query);
+        let previousRangeStart;
+        let previousRangeEnd;
+
+        if (hasCustomRange) {
+            const rangeMs = Math.max(24 * 60 * 60 * 1000, rangeEnd.getTime() - rangeStart.getTime() + 1);
+            previousRangeEnd = new Date(rangeStart.getTime() - 1);
+            previousRangeStart = new Date(previousRangeEnd.getTime() - rangeMs + 1);
+        } else {
+            previousRangeStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth() - 1, 1);
+            previousRangeEnd = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 0, 23, 59, 59, 999);
+        }
 
         // Total revenue (all time)
         const totalRevenueResult = await Order.aggregate([
@@ -38,7 +110,7 @@ router.get('/dashboard', async (req, res) => {
 
         // This month's revenue
         const monthlyRevenueResult = await Order.aggregate([
-            { $match: { businessId, paymentStatus: 'paid', createdAt: { $gte: startOfMonth } } },
+            { $match: { businessId, paymentStatus: 'paid', createdAt: { $gte: rangeStart, $lte: rangeEnd } } },
             { $group: { _id: null, total: { $sum: '$total' }, profit: { $sum: '$profit' } } }
         ]);
         const monthlyRevenue = monthlyRevenueResult[0]?.total || 0;
@@ -46,18 +118,22 @@ router.get('/dashboard', async (req, res) => {
 
         // Last month's revenue for comparison
         const lastMonthRevenueResult = await Order.aggregate([
-            { $match: { businessId, paymentStatus: 'paid', createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } } },
+            { $match: { businessId, paymentStatus: 'paid', createdAt: { $gte: previousRangeStart, $lte: previousRangeEnd } } },
             { $group: { _id: null, total: { $sum: '$total' } } }
         ]);
         const lastMonthRevenue = lastMonthRevenueResult[0]?.total || 0;
 
         // Total orders
         const totalOrders = await Order.countDocuments({ businessId, status: { $ne: 'cancelled' } });
-        const monthlyOrders = await Order.countDocuments({ businessId, status: { $ne: 'cancelled' }, createdAt: { $gte: startOfMonth } });
+        const monthlyOrders = await Order.countDocuments({
+            businessId,
+            status: { $ne: 'cancelled' },
+            createdAt: { $gte: rangeStart, $lte: rangeEnd }
+        });
 
         // This month's expenses
         const monthlyExpensesResult = await Expense.aggregate([
-            { $match: { businessId, date: { $gte: startOfMonth } } },
+            { $match: { businessId, date: { $gte: rangeStart, $lte: rangeEnd } } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
         const monthlyExpenses = monthlyExpensesResult[0]?.total || 0;
@@ -107,11 +183,17 @@ router.get('/dashboard', async (req, res) => {
                 total: totalCustomers,
                 repeat: repeatCustomers,
                 repeatRate: totalCustomers > 0 ? ((repeatCustomers / totalCustomers) * 100).toFixed(1) : 0
+            },
+            period: {
+                startDate: rangeStart,
+                endDate: rangeEnd,
+                previousStartDate: previousRangeStart,
+                previousEndDate: previousRangeEnd
             }
         });
     } catch (error) {
         console.error('Dashboard analytics error:', error);
-        res.status(500).json({ message: error.message });
+        res.status(error.statusCode || 500).json({ message: error.message });
     }
 });
 
@@ -125,35 +207,91 @@ router.get('/revenue-chart', async (req, res) => {
             return res.status(404).json({ message: 'Business not found' });
         }
 
-        const months = 6;
+        const { rangeStart, rangeEnd, hasCustomRange, anchorMonth } = getDateFilter(req.query);
+        let chartStart;
+        let chartEnd;
+
+        if (hasCustomRange) {
+            chartStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
+            chartEnd = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth() + 1, 0, 23, 59, 59, 999);
+        } else {
+            chartStart = new Date(anchorMonth.getFullYear(), anchorMonth.getMonth() - 5, 1);
+            chartEnd = new Date(anchorMonth.getFullYear(), anchorMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+        }
+
+        const [revenueAgg, expenseAgg] = await Promise.all([
+            Order.aggregate([
+                {
+                    $match: {
+                        businessId,
+                        paymentStatus: 'paid',
+                        createdAt: { $gte: chartStart, $lte: chartEnd }
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: '$createdAt' },
+                            month: { $month: '$createdAt' }
+                        },
+                        revenue: { $sum: '$total' },
+                        profit: { $sum: '$profit' }
+                    }
+                },
+                { $sort: { '_id.year': 1, '_id.month': 1 } }
+            ]),
+            Expense.aggregate([
+                {
+                    $match: {
+                        businessId,
+                        date: { $gte: chartStart, $lte: chartEnd }
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: '$date' },
+                            month: { $month: '$date' }
+                        },
+                        total: { $sum: '$amount' }
+                    }
+                },
+                { $sort: { '_id.year': 1, '_id.month': 1 } }
+            ])
+        ]);
+
+        const revenueMap = new Map(
+            revenueAgg.map((row) => [
+                toMonthKey(row._id.year, row._id.month),
+                { revenue: row.revenue || 0, profit: row.profit || 0 }
+            ])
+        );
+        const expenseMap = new Map(
+            expenseAgg.map((row) => [
+                toMonthKey(row._id.year, row._id.month),
+                row.total || 0
+            ])
+        );
+
         const data = [];
-
-        for (let i = months - 1; i >= 0; i--) {
-            const now = new Date();
-            const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
-
-            const result = await Order.aggregate([
-                { $match: { businessId, paymentStatus: 'paid', createdAt: { $gte: startDate, $lte: endDate } } },
-                { $group: { _id: null, revenue: { $sum: '$total' }, profit: { $sum: '$profit' } } }
-            ]);
-
-            const expenseResult = await Expense.aggregate([
-                { $match: { businessId, date: { $gte: startDate, $lte: endDate } } },
-                { $group: { _id: null, total: { $sum: '$amount' } } }
-            ]);
-
+        let iter = new Date(chartStart.getFullYear(), chartStart.getMonth(), 1);
+        while (iter <= chartEnd) {
+            const year = iter.getFullYear();
+            const month = iter.getMonth() + 1;
+            const key = toMonthKey(year, month);
+            const revenueRow = revenueMap.get(key) || { revenue: 0, profit: 0 };
             data.push({
-                month: startDate.toLocaleString('default', { month: 'short' }),
-                revenue: result[0]?.revenue || 0,
-                profit: result[0]?.profit || 0,
-                expenses: expenseResult[0]?.total || 0
+                month: monthLabel(year, month),
+                revenue: revenueRow.revenue,
+                profit: revenueRow.profit,
+                expenses: expenseMap.get(key) || 0
             });
+            iter = new Date(iter.getFullYear(), iter.getMonth() + 1, 1);
         }
 
         res.json(data);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(error.statusCode || 500).json({ message: error.message });
     }
 });
 
@@ -167,8 +305,16 @@ router.get('/top-products', async (req, res) => {
             return res.status(404).json({ message: 'Business not found' });
         }
 
+        const { rangeStart, rangeEnd } = getDateFilter(req.query);
+
         const result = await Order.aggregate([
-            { $match: { businessId, status: { $ne: 'cancelled' } } },
+            {
+                $match: {
+                    businessId,
+                    status: { $ne: 'cancelled' },
+                    createdAt: { $gte: rangeStart, $lte: rangeEnd }
+                }
+            },
             { $unwind: '$items' },
             {
                 $group: {
@@ -184,7 +330,7 @@ router.get('/top-products', async (req, res) => {
 
         res.json(result);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(error.statusCode || 500).json({ message: error.message });
     }
 });
 
@@ -198,20 +344,24 @@ router.get('/health-score', async (req, res) => {
             return res.status(404).json({ message: 'Business not found' });
         }
 
-        const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const { rangeStart, rangeEnd } = getDateFilter(req.query);
+        const rangeDays = Math.max(
+            1,
+            Math.ceil((rangeEnd.getTime() - rangeStart.getTime() + 1) / (24 * 60 * 60 * 1000))
+        );
 
         // Factor 1: Order frequency (max 25 points)
         const recentOrders = await Order.countDocuments({
             businessId,
             status: { $ne: 'cancelled' },
-            createdAt: { $gte: thirtyDaysAgo }
+            createdAt: { $gte: rangeStart, $lte: rangeEnd }
         });
-        const orderScore = Math.min(25, recentOrders * 2.5);
+        const targetOrders = Math.max(10, Math.round(rangeDays / 3));
+        const orderScore = Math.min(25, (recentOrders / targetOrders) * 25);
 
         // Factor 2: Profit margin (max 25 points)
         const profitResult = await Order.aggregate([
-            { $match: { businessId, paymentStatus: 'paid', createdAt: { $gte: thirtyDaysAgo } } },
+            { $match: { businessId, paymentStatus: 'paid', createdAt: { $gte: rangeStart, $lte: rangeEnd } } },
             { $group: { _id: null, revenue: { $sum: '$total' }, profit: { $sum: '$profit' } } }
         ]);
         const revenue = profitResult[0]?.revenue || 0;
@@ -253,7 +403,7 @@ router.get('/health-score', async (req, res) => {
             status: totalScore >= 70 ? 'healthy' : totalScore >= 40 ? 'moderate' : 'needs_attention'
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(error.statusCode || 500).json({ message: error.message });
     }
 });
 
