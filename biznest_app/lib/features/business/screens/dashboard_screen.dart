@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../widgets/business_refresh_registry.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -36,7 +37,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    BusinessRefreshRegistry.register('/dashboard', _fetchDashboardData);
     _fetchDashboardData();
+  }
+
+  @override
+  void dispose() {
+    BusinessRefreshRegistry.unregister('/dashboard', _fetchDashboardData);
+    super.dispose();
   }
 
   Future<void> _fetchDashboardData() async {
@@ -75,9 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : '';
 
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary500),
-      );
+      return const AppPageSkeleton();
     }
 
     final content = Column(

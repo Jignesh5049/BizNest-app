@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../widgets/business_refresh_registry.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -38,7 +39,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   @override
   void initState() {
     super.initState();
+    BusinessRefreshRegistry.register('/expenses', _fetch);
     _initialize();
+  }
+
+  @override
+  void dispose() {
+    BusinessRefreshRegistry.unregister('/expenses', _fetch);
+    super.dispose();
   }
 
   Future<void> _initialize() async {
@@ -317,7 +325,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const AppPageSkeleton();
 
     final summaryList = (_summary['summary'] is List)
         ? _summary['summary'] as List
@@ -407,17 +415,17 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ElevatedButton.icon(
+                AppGradientButton(
                   onPressed: _openAddExpenseScreen,
-                  icon: const Icon(Icons.add, size: 20),
-                  label: const Text('Add Expense'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  minimumSize: const Size(double.infinity, 48),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 20, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Add Expense'),
+                    ],
                   ),
                 ),
               ],
@@ -757,15 +765,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             style: GoogleFonts.inter(fontSize: 14, color: AppColors.gray500),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
+          AppGradientButton(
             onPressed: _openAddExpenseScreen,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            minimumSize: const Size(160, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: const Text('Add Expense'),
           ),
         ],

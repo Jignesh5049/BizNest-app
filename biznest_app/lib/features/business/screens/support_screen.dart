@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../widgets/business_refresh_registry.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -24,11 +25,13 @@ class _SupportScreenState extends State<SupportScreen> {
   @override
   void initState() {
     super.initState();
+    BusinessRefreshRegistry.register('/support', _fetch);
     _fetch();
   }
 
   @override
   void dispose() {
+    BusinessRefreshRegistry.unregister('/support', _fetch);
     _replyCtrl.dispose();
     super.dispose();
   }
@@ -417,7 +420,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const AppPageSkeleton();
 
     final filtered = _filtered;
     final openCount = _tickets.where((t) => t['status'] == 'open').length;

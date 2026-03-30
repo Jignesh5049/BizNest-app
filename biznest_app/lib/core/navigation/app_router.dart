@@ -22,6 +22,36 @@ import '../../features/business/screens/profile_hub_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+CustomTransitionPage<void> _buildTransitionPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curve = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+
+      return FadeTransition(
+        opacity: Tween<double>(begin: 0.92, end: 1).animate(curve),
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.05, 0),
+            end: Offset.zero,
+          ).animate(curve),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 bool _isBusinessRoute(String location) {
   const businessPaths = [
     '/dashboard',
@@ -86,14 +116,20 @@ GoRouter createRouter(AuthBloc authBloc) {
     },
     routes: [
       // Auth routes
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) =>
+            _buildTransitionPage(state: state, child: const LoginScreen()),
+      ),
       GoRoute(
         path: '/signup',
-        builder: (context, state) => const SignupScreen(),
+        pageBuilder: (context, state) =>
+            _buildTransitionPage(state: state, child: const SignupScreen()),
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) =>
+            _buildTransitionPage(state: state, child: const OnboardingScreen()),
       ),
 
       // Business Owner Shell

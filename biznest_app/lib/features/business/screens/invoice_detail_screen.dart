@@ -96,7 +96,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const AppPageSkeleton();
 
     if (_order == null) {
       return Center(
@@ -145,82 +145,90 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Row(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SvgPicture.asset(
-                            'assets/images/logo.svg',
-                            width: 36,
-                            height: 36,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  bizName,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.gray900,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                                if (bizPhone.isNotEmpty)
-                                  Text(
-                                    bizPhone,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      color: AppColors.gray500,
-                                    ),
-                                  ),
-                                if (bizCity.isNotEmpty)
-                                  Text(
-                                    '$bizCity, $bizState',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      color: AppColors.gray500,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                              ],
+                          Center(
+                            child: SvgPicture.asset(
+                              'assets/images/logo.svg',
+                              width: 36,
+                              height: 36,
                             ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      bizName,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.gray900,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    if (bizPhone.isNotEmpty)
+                                      Text(
+                                        bizPhone,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.gray500,
+                                        ),
+                                      ),
+                                    if (bizCity.isNotEmpty)
+                                      Text(
+                                        '$bizCity, $bizState',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10,
+                                          color: AppColors.gray500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'INVOICE',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    (o['orderNumber'] ?? '').toString(),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.gray900,
+                                    ),
+                                  ),
+                                  Text(
+                                    formatDate(o['createdAt'] ?? ''),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      color: AppColors.gray500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'INVOICE',
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          (o['orderNumber'] ?? '').toString(),
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.gray900,
-                          ),
-                        ),
-                        Text(
-                          formatDate(o['createdAt'] ?? ''),
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: AppColors.gray500,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -500,5 +508,3 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     );
   }
 }
-
-

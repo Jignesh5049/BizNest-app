@@ -79,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const AppPageSkeleton();
 
     return Center(
       child: ConstrainedBox(
@@ -310,18 +310,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: AppGradientButton(
                 onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _saved
-                      ? const Color(0xFF22C55E)
-                      : AppColors.primary600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                minimumSize: const Size(double.infinity, 52),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   _saving
                       ? 'Saving...'

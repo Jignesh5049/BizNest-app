@@ -127,120 +127,125 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back),
-                color: AppColors.gray700,
-                tooltip: 'Back',
-              ),
-              const SizedBox(width: 4),
-              Text(
-                _isEdit ? 'Edit Customer' : 'Add New Customer',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.gray900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Name
-          _field(
-            'Name *',
-            _nameCtrl,
-            validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-          ),
-          const SizedBox(height: 12),
-
-          // Phone & Email
-          Row(
-            children: [
-              Expanded(
-                child: _field(
-                  'Phone',
-                  _phoneCtrl,
-                  keyboard: TextInputType.phone,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _field(
-                  'Email',
-                  _emailCtrl,
-                  keyboard: TextInputType.emailAddress,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // City & State
-          Row(
-            children: [
-              Expanded(child: _field('City', _cityCtrl)),
-              const SizedBox(width: 12),
-              Expanded(child: _field('State', _stateCtrl)),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Notes
-          _field('Notes', _notesCtrl, maxLines: 3),
-          const SizedBox(height: 20),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+    return Scaffold(
+      backgroundColor: AppColors.gray50,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back),
+                      color: AppColors.gray700,
+                      tooltip: 'Back',
                     ),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveCustomer,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isEdit ? 'Edit Customer' : 'Add New Customer',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gray900,
+                      ),
                     ),
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Name
+                _field(
+                  'Name *',
+                  _nameCtrl,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+
+                // Phone & Email
+                Row(
+                  children: [
+                    Expanded(
+                      child: _field(
+                        'Phone',
+                        _phoneCtrl,
+                        keyboard: TextInputType.phone,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _field(
+                        'Email',
+                        _emailCtrl,
+                        keyboard: TextInputType.emailAddress,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // City & State
+                Row(
+                  children: [
+                    Expanded(child: _field('City', _cityCtrl)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _field('State', _stateCtrl)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Notes
+                _field('Notes', _notesCtrl, maxLines: 3),
+                const SizedBox(height: 20),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        )
-                      : Text(_isEdit ? 'Update Customer' : 'Create Customer'),
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AppGradientButton(
+                        onPressed: _isSaving ? null : _saveCustomer,
+                        minimumSize: const Size(double.infinity, 48),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                _isEdit ? 'Update Customer' : 'Create Customer',
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
-
-

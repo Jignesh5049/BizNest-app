@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../widgets/business_refresh_registry.dart';
 
 import 'add_product_screen.dart';
 
@@ -20,7 +21,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   void initState() {
     super.initState();
+    BusinessRefreshRegistry.register('/products', _fetchProducts);
     _fetchProducts();
+  }
+
+  @override
+  void dispose() {
+    BusinessRefreshRegistry.unregister('/products', _fetchProducts);
+    super.dispose();
   }
 
   Future<void> _fetchProducts() async {
@@ -371,9 +379,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary500),
-      );
+      return const AppPageSkeleton();
     }
 
     final products = _filteredProducts;
@@ -406,10 +412,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ],
             );
 
-            final actionButton = ElevatedButton.icon(
+            final actionButton = AppGradientButton(
               onPressed: _openAddProductScreen,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Product'),
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, size: 18, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Add Product'),
+                ],
+              ),
             );
 
             if (isCompact) {

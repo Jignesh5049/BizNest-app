@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../widgets/business_refresh_registry.dart';
 import 'add_customer_screen.dart';
 
 class CustomersScreen extends StatefulWidget {
@@ -32,11 +33,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
   @override
   void initState() {
     super.initState();
+    BusinessRefreshRegistry.register('/customers', _fetch);
     _fetch();
   }
 
   @override
   void dispose() {
+    BusinessRefreshRegistry.unregister('/customers', _fetch);
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
@@ -188,7 +191,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppPageSkeleton();
     }
 
     final filtered = _filtered;
@@ -255,26 +258,40 @@ class _CustomersScreenState extends State<CustomersScreen> {
         LayoutBuilder(
           builder: (context, constraints) {
             final isCompact = constraints.maxWidth < 520;
-            final actionButton = ElevatedButton.icon(
+            final actionButton = AppGradientButton(
               onPressed: _openAddCustomerScreen,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Customer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary600,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(0, 48),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, size: 18, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Add Customer'),
+                ],
               ),
             );
 
             if (isCompact) {
-              return SizedBox(width: double.infinity, child: actionButton);
+              return SizedBox(
+                width: double.infinity,
+                child: AppGradientButton(
+                  onPressed: _openAddCustomerScreen,
+                  minimumSize: const Size(double.infinity, 48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 18, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Add Customer'),
+                    ],
+                  ),
+                ),
+              );
             }
 
             return Align(alignment: Alignment.centerRight, child: actionButton);
@@ -804,7 +821,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: ElevatedButton(
+                            child: AppGradientButton(
                               onPressed: isSaving
                                   ? null
                                   : () async {
@@ -859,16 +876,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                         }
                                       }
                                     },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary600,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              minimumSize: const Size(double.infinity, 48),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               child: isSaving
                                   ? const SizedBox(
                                       width: 20,
@@ -1160,15 +1169,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
             style: GoogleFonts.inter(fontSize: 14, color: AppColors.gray500),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => _openForm(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+          AppGradientButton(
+            onPressed: _openAddCustomerScreen,
+            minimumSize: const Size(170, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: const Text('Add Customer'),
           ),
         ],

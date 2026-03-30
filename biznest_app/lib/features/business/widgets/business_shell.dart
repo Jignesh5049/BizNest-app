@@ -3,6 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../screens/dashboard_screen.dart';
+import '../screens/products_screen.dart';
+import '../screens/orders_screen.dart';
+import '../screens/customers_screen.dart';
+import 'business_refresh_registry.dart';
 import 'sidebar.dart';
 
 class BusinessShell extends StatefulWidget {
@@ -16,6 +21,7 @@ class BusinessShell extends StatefulWidget {
 
 class _BusinessShellState extends State<BusinessShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  late final PageController _corePageController;
   static const List<String> _coreRoutes = [
     '/dashboard',
     '/products',
@@ -32,12 +38,115 @@ class _BusinessShellState extends State<BusinessShell> {
     '/settings',
     '/support',
   ];
+  static const List<String> _pullToRefreshDisabledRoutes = [
+    '/profile',
+    '/settings',
+    '/learn',
+    '/pricing',
+    '/invoices',
+  ];
 
   EdgeInsets _contentPadding(double width, bool isDesktop) {
     if (isDesktop) return const EdgeInsets.all(20);
-    if (width < 360)
+    if (width < 360) {
       return const EdgeInsets.symmetric(horizontal: 8, vertical: 6);
+    }
     return const EdgeInsets.symmetric(horizontal: 10, vertical: 8);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _corePageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    _corePageController.dispose();
+    super.dispose();
+  }
+
+  int _coreIndexFromLocation(String location) {
+    final index = _coreRoutes.indexWhere(
+      (route) => location == route || location.startsWith('$route/'),
+    );
+    return index < 0 ? 0 : index;
+  }
+
+  void _syncCorePageIfNeeded(int coreIndex) {
+    if (!_corePageController.hasClients) return;
+    final currentPage = (_corePageController.page ?? coreIndex.toDouble())
+        .round();
+    if (currentPage == coreIndex) return;
+    _corePageController.jumpToPage(coreIndex);
+  }
+
+  Widget _coreSwipePage(double width, bool isDesktop, String location) {
+    final coreIndex = _coreIndexFromLocation(location);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncCorePageIfNeeded(coreIndex);
+    });
+
+    final pages = <Widget>[
+      const DashboardScreen(),
+      const ProductsScreen(),
+      const OrdersScreen(),
+      const CustomersScreen(),
+    ];
+
+    return PageView.builder(
+      controller: _corePageController,
+      itemCount: pages.length,
+      onPageChanged: (index) {
+        final targetPath = _coreRoutes[index];
+        if (targetPath != location) {
+          context.go(targetPath);
+        }
+      },
+      itemBuilder: (context, index) {
+        final route = _coreRoutes[index];
+        return RefreshIndicator(
+          onRefresh: () => BusinessRefreshRegistry.refreshFor(route),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: _contentPadding(width, isDesktop),
+            child: pages[index],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _regularPage(double width, bool isDesktop) {
+    final location = GoRouterState.of(context).matchedLocation;
+    if (_matchesAnyRoute(location, _pullToRefreshDisabledRoutes)) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _contentPadding(width, isDesktop),
+        child: widget.child,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => BusinessRefreshRegistry.refreshFor(location),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _contentPadding(width, isDesktop),
+        child: widget.child,
+      ),
+    );
+  }
+
+  Widget _bodyContent(
+    double width,
+    bool isDesktop,
+    bool showBottomNav,
+    String location,
+  ) {
+    if (showBottomNav) {
+      return _coreSwipePage(width, isDesktop, location);
+    }
+    return _regularPage(width, isDesktop);
   }
 
   @override
@@ -46,7 +155,6 @@ class _BusinessShellState extends State<BusinessShell> {
     final isDesktop = width >= 1024;
     final routerState = GoRouterState.of(context);
     final location = routerState.matchedLocation;
-    final fromRoute = routerState.uri.queryParameters['from'];
     final isDrawerScreen = _matchesAnyRoute(location, _drawerOnlyRoutes);
     final showBottomNav = !isDesktop && _matchesAnyRoute(location, _coreRoutes);
 
@@ -155,18 +263,6 @@ class _BusinessShellState extends State<BusinessShell> {
                             child: IconButton(
                               onPressed: () {
                                 if (isDrawerScreen) {
-                                  if (fromRoute != null &&
-                                      _matchesAnyRoute(
-                                        fromRoute,
-                                        _coreRoutes,
-                                      )) {
-                                    context.go(fromRoute);
-                                    return;
-                                  }
-                                  if (context.canPop()) {
-                                    context.pop();
-                                    return;
-                                  }
                                   context.go('/dashboard');
                                   return;
                                 }
@@ -207,9 +303,11 @@ class _BusinessShellState extends State<BusinessShell> {
                     ),
                   ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: _contentPadding(width, isDesktop),
-                    child: widget.child,
+                  child: _bodyContent(
+                    width,
+                    isDesktop,
+                    showBottomNav,
+                    location,
                   ),
                 ),
               ],

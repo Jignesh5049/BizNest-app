@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../widgets/business_refresh_registry.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -24,7 +25,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
+    BusinessRefreshRegistry.register('/analytics', _fetch);
     _initialize();
+  }
+
+  @override
+  void dispose() {
+    BusinessRefreshRegistry.unregister('/analytics', _fetch);
+    super.dispose();
   }
 
   Future<void> _initialize() async {
@@ -265,7 +273,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const AppPageSkeleton();
 
     final width = MediaQuery.of(context).size.width;
     final sectionGap = width < 360 ? 16.0 : 20.0;

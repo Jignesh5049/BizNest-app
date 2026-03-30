@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:biznest_core/biznest_core.dart';
+import '../widgets/business_refresh_registry.dart';
 import 'add_order_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -32,7 +33,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   void initState() {
     super.initState();
+    BusinessRefreshRegistry.register('/orders', _fetchOrders);
     _initialize();
+  }
+
+  @override
+  void dispose() {
+    BusinessRefreshRegistry.unregister('/orders', _fetchOrders);
+    super.dispose();
   }
 
   Future<void> _initialize() async {
@@ -513,7 +521,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: ElevatedButton(
+                                  child: AppGradientButton(
                                     onPressed: (items.isEmpty || isSaving)
                                         ? null
                                         : () async {
@@ -558,6 +566,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                               }
                                             }
                                           },
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      48,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                     child: isSaving
                                         ? const SizedBox(
                                             width: 20,
@@ -659,10 +674,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ],
               ),
             ),
-            ElevatedButton.icon(
+            AppGradientButton(
               onPressed: _openAddOrderScreen,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('New Order'),
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, size: 18, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('New Order'),
+                ],
+              ),
             ),
           ],
         ),
@@ -747,9 +770,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
         // Orders List
         if (_loading)
-          const Center(
-            child: CircularProgressIndicator(color: AppColors.primary500),
-          )
+          const AppPageSkeleton()
         else if (orders.isEmpty)
           Center(
             child: Padding(

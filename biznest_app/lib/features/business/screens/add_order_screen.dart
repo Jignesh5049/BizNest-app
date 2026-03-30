@@ -23,6 +23,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
   List<dynamic> _filteredCustomers = [];
   List<dynamic> _allProducts = [];
   List<dynamic> _filteredProducts = [];
+  String? _selectedCustomerId;
   Map<String, dynamic>? _selectedProduct;
   List<Map<String, dynamic>> _items = [];
   bool _isSaving = false;
@@ -135,6 +136,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
 
   void _selectCustomer(Map<String, dynamic> customer) {
     setState(() {
+      _selectedCustomerId = customer['_id']?.toString();
       _customerNameCtrl.text = (customer['name'] ?? '').toString();
       final phone = (customer['phone'] ?? '').toString();
       if (phone.isNotEmpty) {
@@ -192,6 +194,15 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
 
   Future<void> _saveOrder() async {
     if (!_formKey.currentState!.validate()) return;
+    if ((_selectedCustomerId ?? '').isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select an existing customer'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -206,6 +217,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
 
     try {
       await _api.createOrder({
+        'customerId': _selectedCustomerId,
         'customerName': _customerNameCtrl.text.trim(),
         'customerPhone': _customerPhoneCtrl.text.trim(),
         'items': _items,
@@ -253,346 +265,360 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
           sum + ((i['price'] ?? 0) as num) * ((i['quantity'] ?? 1) as num),
     );
 
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        setState(() {
-          _showCustomerSuggestions = false;
-          _showProductSuggestions = false;
-        });
-      },
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back),
-                  color: AppColors.gray700,
-                  tooltip: 'Back',
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'New Order',
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.gray900,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Customer Info Section
-            _formLabel('Customer Name *'),
-            const SizedBox(height: 6),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _customerNameCtrl,
-                  focusNode: _customerFocusNode,
-                  onTap: () {
-                    setState(() {
-                      _showCustomerSuggestions = true;
-                      _filterCustomers();
-                    });
-                  },
-                  onChanged: (_) {
-                    setState(() => _showCustomerSuggestions = true);
-                    _filterCustomers();
-                  },
-                  decoration: InputDecoration(
-                    hintText: _isLoadingCustomers
-                        ? 'Loading customers...'
-                        : 'Customer name',
-                  ),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                if (_showCustomerSuggestions && _filteredCustomers.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(top: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    constraints: const BoxConstraints(maxHeight: 220),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _filteredCustomers.length,
-                      itemBuilder: (context, index) {
-                        final customer = Map<String, dynamic>.from(
-                          _filteredCustomers[index] as Map,
-                        );
-                        return ListTile(
-                          dense: true,
-                          title: Text((customer['name'] ?? '').toString()),
-                          subtitle: Text(
-                            (customer['phone'] ?? '').toString(),
-                            style: TextStyle(
-                              color: AppColors.gray600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          onTap: () => _selectCustomer(customer),
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            _formLabel('Customer Phone'),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _customerPhoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(hintText: 'Phone number'),
-            ),
-            const SizedBox(height: 20),
-
-            // Items Section
-            Text(
-              'Items',
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.gray900,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Product Selection with Autocomplete
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _itemSearchCtrl,
-                  focusNode: _productFocusNode,
-                  onTap: () {
-                    setState(() => _showProductSuggestions = true);
-                    _filterProducts();
-                  },
-                  onChanged: (_) {
-                    setState(() => _showProductSuggestions = true);
-                    _filterProducts();
-                  },
-                  readOnly: _selectedProduct != null,
-                  decoration: InputDecoration(
-                    hintText: _isLoadingProducts
-                        ? 'Loading products...'
-                        : 'Select product',
-                    suffixIcon: _selectedProduct != null
-                        ? IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedProduct = null;
-                                _itemSearchCtrl.clear();
-                                _filteredProducts = [];
-                                _showProductSuggestions = false;
-                              });
-                            },
-                            icon: const Icon(Icons.close, color: Colors.green),
-                          )
-                        : null,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                if (_selectedProduct == null &&
-                    _showProductSuggestions &&
-                    _filteredProducts.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(top: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    constraints: const BoxConstraints(maxHeight: 220),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _filteredProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = Map<String, dynamic>.from(
-                          _filteredProducts[index] as Map,
-                        );
-                        return ListTile(
-                          dense: true,
-                          title: Text((product['name'] ?? '').toString()),
-                          subtitle: Text(
-                            'Rs ${_asNum(product['sellingPrice'])}',
-                            style: TextStyle(
-                              color: AppColors.primary600,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onTap: () => _selectProduct(product),
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Quantity and Add Button Row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: TextFormField(
-                    controller: _itemQtyCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Quantity',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      setState(() {});
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed:
-                      _selectedProduct != null && _itemQtyCtrl.text.isNotEmpty
-                      ? _addItem
-                      : null,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add'),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Items List
-            if (_items.isNotEmpty) ...[
-              ..._items.asMap().entries.map((e) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.gray50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
+    return Scaffold(
+      backgroundColor: AppColors.gray50,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              FocusScope.of(context).unfocus();
+              setState(() {
+                _showCustomerSuggestions = false;
+                _showProductSuggestions = false;
+              });
+            },
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          e.value['name'],
-                          style: GoogleFonts.inter(fontSize: 13),
-                        ),
-                      ),
-                      Text(
-                        'x${e.value['quantity']}',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppColors.gray500,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        formatCurrency(
-                          e.value['amount'] ?? e.value['price'] ?? 0,
-                        ),
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                       IconButton(
-                        icon: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: AppColors.danger,
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back),
+                        color: AppColors.gray700,
+                        tooltip: 'Back',
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'New Order',
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.gray900,
                         ),
-                        onPressed: () => _removeItem(e.key),
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.only(left: 8),
                       ),
                     ],
                   ),
-                );
-              }),
-              const SizedBox(height: 8),
-              Text(
-                'Total: ${formatCurrency(itemsTotal)}',
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary600,
-                ),
-                textAlign: TextAlign.right,
-              ),
-            ],
+                  const SizedBox(height: 20),
 
-            const SizedBox(height: 24),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('Cancel'),
+                  // Customer Info Section
+                  _formLabel('Customer Name *'),
+                  const SizedBox(height: 6),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: _customerNameCtrl,
+                        focusNode: _customerFocusNode,
+                        onTap: () {
+                          setState(() {
+                            _showCustomerSuggestions = true;
+                            _filterCustomers();
+                          });
+                        },
+                        onChanged: (_) {
+                          _selectedCustomerId = null;
+                          setState(() => _showCustomerSuggestions = true);
+                          _filterCustomers();
+                        },
+                        decoration: InputDecoration(
+                          hintText: _isLoadingCustomers
+                              ? 'Loading customers...'
+                              : 'Customer name',
+                        ),
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      if (_showCustomerSuggestions &&
+                          _filteredCustomers.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          constraints: const BoxConstraints(maxHeight: 220),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _filteredCustomers.length,
+                            itemBuilder: (context, index) {
+                              final customer = Map<String, dynamic>.from(
+                                _filteredCustomers[index] as Map,
+                              );
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  (customer['name'] ?? '').toString(),
+                                ),
+                                subtitle: Text(
+                                  (customer['phone'] ?? '').toString(),
+                                  style: TextStyle(
+                                    color: AppColors.gray600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                onTap: () => _selectCustomer(customer),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _saveOrder,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                  const SizedBox(height: 14),
+                  _formLabel('Customer Phone'),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _customerPhoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(hintText: 'Phone number'),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Items Section
+                  Text(
+                    'Items',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray900,
                     ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Product Selection with Autocomplete
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: _itemSearchCtrl,
+                        focusNode: _productFocusNode,
+                        onTap: () {
+                          setState(() => _showProductSuggestions = true);
+                          _filterProducts();
+                        },
+                        onChanged: (_) {
+                          setState(() => _showProductSuggestions = true);
+                          _filterProducts();
+                        },
+                        readOnly: _selectedProduct != null,
+                        decoration: InputDecoration(
+                          hintText: _isLoadingProducts
+                              ? 'Loading products...'
+                              : 'Select product',
+                          suffixIcon: _selectedProduct != null
+                              ? IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedProduct = null;
+                                      _itemSearchCtrl.clear();
+                                      _filteredProducts = [];
+                                      _showProductSuggestions = false;
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.green,
+                                  ),
+                                )
+                              : null,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                      if (_selectedProduct == null &&
+                          _showProductSuggestions &&
+                          _filteredProducts.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          constraints: const BoxConstraints(maxHeight: 220),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _filteredProducts.length,
+                            itemBuilder: (context, index) {
+                              final product = Map<String, dynamic>.from(
+                                _filteredProducts[index] as Map,
+                              );
+                              return ListTile(
+                                dense: true,
+                                title: Text((product['name'] ?? '').toString()),
+                                subtitle: Text(
+                                  'Rs ${_asNum(product['sellingPrice'])}',
+                                  style: TextStyle(
+                                    color: AppColors.primary600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                onTap: () => _selectProduct(product),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Quantity and Add Button Row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: TextFormField(
+                          controller: _itemQtyCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Quantity',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed:
+                            _selectedProduct != null &&
+                                _itemQtyCtrl.text.isNotEmpty
+                            ? _addItem
+                            : null,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Items List
+                  if (_items.isNotEmpty) ...[
+                    ..._items.asMap().entries.map((e) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.gray50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                e.value['name'],
+                                style: GoogleFonts.inter(fontSize: 13),
+                              ),
                             ),
-                          )
-                        : const Text('Create Order'),
+                            Text(
+                              'x${e.value['quantity']}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppColors.gray500,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              formatCurrency(
+                                e.value['amount'] ?? e.value['price'] ?? 0,
+                              ),
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: AppColors.danger,
+                              ),
+                              onPressed: () => _removeItem(e.key),
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.only(left: 8),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Total: ${formatCurrency(itemsTotal)}',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary600,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AppGradientButton(
+                          onPressed: _isSaving ? null : _saveOrder,
+                          minimumSize: const Size(double.infinity, 52),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Create Order'),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
-
-
