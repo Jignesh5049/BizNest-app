@@ -269,7 +269,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () => context.go('/store/cart'),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        context.pop();
+                      } else {
+                        context.go('/store/cart');
+                      }
+                    },
                     icon: const Icon(Icons.arrow_back),
                     style: IconButton.styleFrom(backgroundColor: Colors.white),
                   ),
@@ -577,5 +583,3 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 }
-
-

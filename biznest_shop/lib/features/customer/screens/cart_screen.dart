@@ -5,14 +5,35 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:biznest_core/biznest_core.dart';
 import '../cubit/cart_cubit.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  bool _showReturnLoading = false;
+
+  Future<void> _openCheckout() async {
+    await context.push('/store/checkout');
+    if (!mounted) return;
+    setState(() => _showReturnLoading = true);
+    await Future.delayed(const Duration(milliseconds: 320));
+    if (mounted) {
+      setState(() => _showReturnLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CartCubit, CartState>(
       builder: (context, state) {
         final cart = context.read<CartCubit>();
+
+        if (_showReturnLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
         if (state.items.isEmpty && state.savedForLater.isEmpty) {
           return _emptyCart(context);
@@ -101,7 +122,7 @@ class CartScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () => context.go('/store/checkout'),
+                          onPressed: _openCheckout,
                           icon: const Icon(Icons.shopping_bag, size: 18),
                           label: const Text('Proceed to Checkout'),
                           style: ElevatedButton.styleFrom(
@@ -113,6 +134,27 @@ class CartScreen extends StatelessWidget {
                             ),
                             textStyle: GoogleFonts.inter(
                               fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.go('/store'),
+                          icon: const Icon(Icons.add_shopping_cart, size: 18),
+                          label: const Text('Add More Items'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary600,
+                            side: BorderSide(color: AppColors.primary600),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            textStyle: GoogleFonts.inter(
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -399,5 +441,3 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
-
-

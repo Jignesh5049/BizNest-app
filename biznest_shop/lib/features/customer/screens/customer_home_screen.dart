@@ -98,6 +98,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     } catch (_) {}
   }
 
+  IconData _getCategoryIcon(String value) {
+    return switch (value) {
+      'all' => Icons.apps,
+      'retail' => Icons.store,
+      'food' => Icons.restaurant,
+      'services' => Icons.miscellaneous_services,
+      'handmade' => Icons.palette,
+      'consulting' => Icons.business_center,
+      'other' => Icons.more_horiz,
+      _ => Icons.category,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
@@ -150,7 +163,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 3),
                 Text(
                   'Shop from your favorite local stores',
                   style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
@@ -184,7 +197,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
 
           // Featured Businesses
           if (_businesses.isNotEmpty) ...[
@@ -211,18 +224,46 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             SizedBox(
               height: 90,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _businesses.length > 6 ? 6 : _businesses.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                separatorBuilder: (context, index) => const SizedBox(width: 2),
                 itemBuilder: (_, i) => _businessCard(_businesses[i]),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
           ],
+
+          // Category Filters
+          Text(
+            'Category',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.gray700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _categoryChip('All', 'all'),
+                _categoryChip('Retail', 'retail'),
+                _categoryChip('Other', 'other'),
+                ...businessCategories.map(
+                  (c) => c.value == 'retail' || c.value == 'other'
+                      ? const SizedBox.shrink()
+                      : _categoryChip(c.label, c.value),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // Products + Sort
           Row(
@@ -245,12 +286,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 8,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppColors.gray200),
                   ),
                   child: Row(
@@ -288,32 +329,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Category Chips
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _categoryChip('All', 'all'),
-                ...businessCategories.map(
-                  (c) => _categoryChip(c.label, c.value),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           Text(
             'All Products',
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.gray700,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           if (_products.isEmpty)
             _emptyState(
@@ -348,6 +374,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   Widget _categoryChip(String label, String value) {
     final active = _category == value;
+    final icon = _getCategoryIcon(value);
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
@@ -358,7 +385,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           _fetchData();
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: active ? AppColors.primary600 : Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -366,13 +393,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               color: active ? AppColors.primary600 : AppColors.gray200,
             ),
           ),
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: active ? Colors.white : AppColors.gray600,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: active ? Colors.white : AppColors.gray600,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: active ? Colors.white : AppColors.gray600,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -436,49 +474,53 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
-              ),
-              child: AspectRatio(
-                aspectRatio: 1.2,
-                child: imageProvider != null
-                    ? Image(
-                        image: imageProvider,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _placeholderImage(),
-                      )
-                    : _placeholderImage(),
-              ),
-            ),
-            // Favorite
-            Align(
-              alignment: Alignment.topRight,
-              child: Transform.translate(
-                offset: const Offset(-8, -18),
-                child: GestureDetector(
-                  onTap: () => _toggleFavorite(p['_id']),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      isFav ? Icons.favorite : Icons.favorite_border,
-                      size: 18,
-                      color: isFav ? Colors.red : AppColors.gray400,
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 1.2,
+                    child: imageProvider != null
+                        ? Image(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                _placeholderImage(),
+                          )
+                        : _placeholderImage(),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _toggleFavorite(p['_id']),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        size: 21,
+                        color: isFav ? Colors.red : AppColors.gray400,
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -605,7 +647,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                child: const Text('Add to Cart'),
+                                child: Text(
+                                  cartState.itemCount > 0
+                                      ? 'Add More Items'
+                                      : 'Add to Cart',
+                                ),
                               ),
                       );
                     },

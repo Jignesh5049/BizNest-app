@@ -298,7 +298,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             );
                           },
                     icon: const Icon(Icons.shopping_cart, size: 18),
-                    label: Text(inCart ? 'Update Cart' : 'Add to Cart'),
+                    label: Text(
+                      inCart
+                          ? 'Update Cart'
+                          : (cart.state.itemCount > 0
+                                ? 'Add More Items'
+                                : 'Add to Cart'),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary600,
                       foregroundColor: Colors.white,
@@ -446,5 +452,3 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 }
-
-

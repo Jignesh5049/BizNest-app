@@ -27,6 +27,7 @@ class _CustomerShellState extends State<CustomerShell> {
     '/store/profile',
   ];
   late final PageController _corePageController;
+  bool _routeLoading = false;
   final List<Widget> _corePages = const [
     CustomerHomeScreen(),
     CustomerOrdersScreen(),
@@ -45,6 +46,17 @@ class _CustomerShellState extends State<CustomerShell> {
   void initState() {
     super.initState();
     _corePageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomerShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final routeChanged =
+        oldWidget.child.runtimeType != widget.child.runtimeType ||
+        oldWidget.child.key != widget.child.key;
+    if (routeChanged) {
+      _showRouteLoading();
+    }
   }
 
   @override
@@ -70,6 +82,16 @@ class _CustomerShellState extends State<CustomerShell> {
         .round();
     if (currentPage == coreIndex) return;
     _corePageController.jumpToPage(coreIndex);
+  }
+
+  void _showRouteLoading() {
+    if (_routeLoading || !mounted) return;
+    setState(() => _routeLoading = true);
+    Future.delayed(const Duration(milliseconds: 220), () {
+      if (mounted) {
+        setState(() => _routeLoading = false);
+      }
+    });
   }
 
   Widget _coreSwipePage(String location) {
@@ -119,53 +141,63 @@ class _CustomerShellState extends State<CustomerShell> {
           fit: BoxFit.contain,
         ),
         actions: [
-          // Cart icon with badge
-          BlocBuilder<CartCubit, CartState>(
-            builder: (context, cartState) {
-              return Stack(
-                children: [
-                  IconButton(
-                    onPressed: () => context.go('/store/cart'),
-                    icon: Icon(
-                      Icons.shopping_cart_outlined,
-                      color: location == '/store/cart'
-                          ? AppColors.primary600
-                          : AppColors.gray600,
-                    ),
-                  ),
-                  if (cartState.itemCount > 0)
-                    Positioned(
-                      right: 4,
-                      top: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.danger,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          '${cartState.itemCount}',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+          if (location != '/store/cart')
+            // Cart icon with badge
+            BlocBuilder<CartCubit, CartState>(
+              builder: (context, cartState) {
+                return Stack(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.go('/store/cart'),
+                      icon: Icon(
+                        Icons.shopping_cart_outlined,
+                        color: AppColors.gray600,
                       ),
                     ),
-                ],
-              );
-            },
-          ),
+                    if (cartState.itemCount > 0)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            '${cartState.itemCount}',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           const SizedBox(width: 8),
         ],
       ),
-      body: isCoreRoute ? _coreSwipePage(location) : nonCoreBody,
+      body: Stack(
+        children: [
+          isCoreRoute ? _coreSwipePage(location) : nonCoreBody,
+          if (_routeLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white.withValues(alpha: 0.75),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,

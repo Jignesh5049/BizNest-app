@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:biznest_core/biznest_core.dart';
+import 'customer_profile_option_screens.dart';
 import '../widgets/customer_refresh_registry.dart';
 
 class CustomerProfileScreen extends StatefulWidget {
@@ -13,17 +13,12 @@ class CustomerProfileScreen extends StatefulWidget {
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   final _api = ApiService();
-  final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  String _name = 'Guest User';
+  String _email = 'guest@example.com';
+  String _phone = '';
   List<dynamic> _addresses = [];
   List<dynamic> _tickets = [];
   bool _loading = true;
-  bool _saving = false;
-  final _streetCtrl = TextEditingController();
-  final _cityCtrl = TextEditingController();
-  final _stateCtrl = TextEditingController();
-  final _pincodeCtrl = TextEditingController();
-  final _labelCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -35,13 +30,6 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   @override
   void dispose() {
     CustomerRefreshRegistry.unregister('/store/profile', _fetch);
-    _nameCtrl.dispose();
-    _phoneCtrl.dispose();
-    _streetCtrl.dispose();
-    _cityCtrl.dispose();
-    _stateCtrl.dispose();
-    _pincodeCtrl.dispose();
-    _labelCtrl.dispose();
     super.dispose();
   }
 
@@ -49,19 +37,25 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is AuthAuthenticated) {
-        _nameCtrl.text = authState.user['name'] ?? '';
-        _phoneCtrl.text = authState.user['phone'] ?? '';
+        _name = (authState.user['name'] ?? '').toString().trim();
+        _email = (authState.user['email'] ?? '').toString().trim();
+        _phone = (authState.user['phone'] ?? '').toString().trim();
       }
       final addrRes = await _api.getAddresses();
       _addresses = addrRes.data is List
           ? addrRes.data
           : (addrRes.data?['addresses'] ?? []);
       try {
+        final ticketRes = await _api.getCustomerSupportTickets();
+        _tickets = ticketRes.data is List
+            ? ticketRes.data
+            : (ticketRes.data?['tickets'] ?? []);
+      } catch (_) {
         final ticketRes = await _api.getSupportTickets();
         _tickets = ticketRes.data is List
             ? ticketRes.data
             : (ticketRes.data?['tickets'] ?? []);
-      } catch (_) {}
+      }
       if (!mounted) return;
       setState(() => _loading = false);
     } catch (e) {
@@ -70,363 +64,327 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     }
   }
 
-  Future<void> _saveProfile() async {
-    setState(() => _saving = true);
-    try {
-      await _api.updateMe({
-        'name': _nameCtrl.text.trim(),
-        'phone': _phoneCtrl.text.trim(),
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Profile updated')));
-      }
-    } catch (_) {}
-    if (!mounted) return;
-    setState(() => _saving = false);
+  Future<void> _openScreen(Widget child) async {
+    await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => child));
+    _fetch();
   }
 
-  Future<void> _addAddress() async {
-    if (_streetCtrl.text.trim().isEmpty) return;
-    try {
-      await _api.addAddress({
-        'label': _labelCtrl.text.trim().isNotEmpty
-            ? _labelCtrl.text.trim()
-            : 'Home',
-        'street': _streetCtrl.text.trim(),
-        'city': _cityCtrl.text.trim(),
-        'state': _stateCtrl.text.trim(),
-        'pincode': _pincodeCtrl.text.trim(),
-      });
-      _labelCtrl.clear();
-      _streetCtrl.clear();
-      _cityCtrl.clear();
-      _stateCtrl.clear();
-      _pincodeCtrl.clear();
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
-      _fetch();
-    } catch (_) {}
-  }
-
-  Future<void> _deleteAddress(String id) async {
-    try {
-      await _api.deleteAddress(id);
-      _fetch();
-    } catch (_) {}
-  }
-
-  void _showAddAddressDialog() {
-    _labelCtrl.clear();
-    _streetCtrl.clear();
-    _cityCtrl.clear();
-    _stateCtrl.clear();
-    _pincodeCtrl.clear();
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Add Address',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+  Widget _optionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE4F0ED),
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 14),
-              _tf('Label (Home, Office...)', _labelCtrl),
-              const SizedBox(height: 8),
-              _tf('Street', _streetCtrl),
-              const SizedBox(height: 8),
-              Row(
+              child: Icon(icon, color: const Color(0xFF218465), size: 34),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _tf('City', _cityCtrl)),
-                  const SizedBox(width: 8),
-                  Expanded(child: _tf('State', _stateCtrl)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _tf('Pincode', _pincodeCtrl),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancel'),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1E2426),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _addAddress,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary600,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Add'),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF62716E),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey.shade500,
+              size: 42,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _tf(String hint, TextEditingController ctrl) => TextField(
-    controller: ctrl,
-    decoration: InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppColors.gray200),
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 14),
+      child: Text(
+        title,
+        style: GoogleFonts.inter(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF243533),
+        ),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppColors.gray200),
-      ),
-    ),
-  );
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'My Profile',
-            style: GoogleFonts.inter(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.gray900,
+    final avatarLabel = _name.trim().isEmpty ? 'G' : _name.trim()[0];
+    final displayName = _name.trim().isEmpty ? 'Guest User' : _name.trim();
+    final displayEmail = _email.trim().isEmpty ? 'guest@example.com' : _email;
+    final addressCount = _addresses.length;
+    final ticketCount = _tickets.length;
+
+    return Stack(
+      children: [
+        Positioned(
+          left: -70,
+          top: 360,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFE2EBE5),
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Profile form
-          _section('Profile Info', Icons.person_outline, [
-            _tf('Name', _nameCtrl),
-            const SizedBox(height: 10),
-            _tf('Phone', _phoneCtrl),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+        ),
+        Positioned(
+          right: -90,
+          top: -60,
+          child: Container(
+            width: 260,
+            height: 260,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFE4ECE6),
+            ),
+          ),
+        ),
+        SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(34),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1E8A64), Color(0xFF2CAE7F)],
                   ),
                 ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Save Changes'),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 16),
-
-          // Addresses
-          _section('My Addresses', Icons.location_on_outlined, [
-            ..._addresses.map((a) {
-              final addr = Map<String, dynamic>.from(a as Map);
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.gray50,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            addr['label'] ?? 'Address',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0.30),
+                                Colors.white.withValues(alpha: 0.14),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
+                          child: Center(
+                            child: Text(
+                              avatarLabel.toUpperCase(),
+                              style: GoogleFonts.inter(
+                                fontSize: 38,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: GoogleFonts.inter(
+                                  fontSize: 52,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                displayEmail,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 20,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.24),
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified_user_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
                           Text(
-                            '${addr['street'] ?? ''}, ${addr['city'] ?? ''}, ${addr['state'] ?? ''} ${addr['pincode'] ?? ''}'
-                                .trim(),
+                            'Verified account',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: AppColors.gray500,
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => _deleteAddress(addr['_id']),
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: AppColors.danger,
                       ),
                     ),
                   ],
                 ),
-              );
-            }),
-            TextButton.icon(
-              onPressed: _showAddAddressDialog,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Address'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary600,
               ),
-            ),
-          ]),
-          const SizedBox(height: 16),
-
-          // Support Tickets
-          if (_tickets.isNotEmpty) ...[
-            _section('My Tickets', Icons.chat_outlined, [
-              ..._tickets.take(5).map((t) {
-                final ticket = Map<String, dynamic>.from(t as Map);
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.gray50,
-                    borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 20),
+              _sectionTitle('Account'),
+              _optionTile(
+                icon: Icons.person_outline_rounded,
+                title: 'Edit Profile',
+                subtitle: 'Update your personal details',
+                onTap: () => _openScreen(
+                  EditProfileDetailsScreen(
+                    initialName: displayName,
+                    initialEmail: displayEmail,
+                    initialPhone: _phone,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              ticket['subject'] ?? '',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (ticket['status'] ?? '') == 'resolved'
-                                  ? const Color(0xFFDCFCE7)
-                                  : const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              ticket['status'] ?? 'open',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if ((ticket['replies'] ?? []).isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          '${(ticket['replies'] as List).length} replies',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: AppColors.gray500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              }),
-            ]),
-            const SizedBox(height: 16),
-          ],
-
-          // Logout
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                context.read<AuthBloc>().add(AuthLogoutRequested());
-                context.go('/login');
-              },
-              icon: Icon(Icons.logout, size: 18, color: AppColors.danger),
-              label: Text('Logout', style: TextStyle(color: AppColors.danger)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                side: BorderSide(
-                  color: AppColors.danger.withValues(alpha: 0.3),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ),
+              _optionTile(
+                icon: Icons.location_on_outlined,
+                title: 'Delivery Addresses',
+                subtitle: addressCount == 0
+                    ? 'Manage your saved addresses'
+                    : '$addressCount saved address(es)',
+                onTap: () => _openScreen(const DeliveryAddressesScreen()),
+              ),
+              _optionTile(
+                icon: Icons.credit_card_rounded,
+                title: 'Payment Methods',
+                subtitle: 'Cards, UPI, and wallets',
+                onTap: () => _openScreen(const PaymentMethodsScreen()),
+              ),
+              const SizedBox(height: 6),
+              _sectionTitle('Activity & Support'),
+              _optionTile(
+                icon: Icons.history_rounded,
+                title: 'Order History',
+                subtitle: 'Track all past orders',
+                onTap: () => _openScreen(const OrderHistorySummaryScreen()),
+              ),
+              _optionTile(
+                icon: Icons.notifications_none_rounded,
+                title: 'Notifications',
+                subtitle: 'Delivery and offer alerts',
+                onTap: () =>
+                    _openScreen(const NotificationsPreferencesScreen()),
+              ),
+              _optionTile(
+                icon: Icons.help_outline_rounded,
+                title: 'Help & Support',
+                subtitle: ticketCount == 0
+                    ? 'Contact support anytime'
+                    : '$ticketCount open support ticket(s)',
+                onTap: () => _openScreen(const HelpSupportScreen()),
+              ),
+              _optionTile(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                subtitle: 'App preferences and permissions',
+                onTap: () => _openScreen(const SettingsPreferencesScreen()),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      _openScreen(const LogoutConfirmationScreen()),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Logout'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE35257),
+                    side: const BorderSide(
+                      color: Color(0xFFE35257),
+                      width: 1.4,
+                    ),
+                    textStyle: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
-
-  Widget _section(String title, IconData icon, List<Widget> children) =>
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.gray100),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 18, color: AppColors.primary600),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
-      );
 }

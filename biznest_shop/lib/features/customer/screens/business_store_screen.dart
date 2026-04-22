@@ -339,65 +339,71 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
-              ),
-              child: AspectRatio(
-                aspectRatio: 1.2,
-                child: imageProvider != null
-                    ? Image(
-                        image: imageProvider,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.gray100,
-                          child: Center(
-                            child: Icon(
-                              Icons.image,
-                              size: 40,
-                              color: AppColors.gray300,
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 1.2,
+                    child: imageProvider != null
+                        ? Image(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: AppColors.gray100,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.image,
+                                      size: 40,
+                                      color: AppColors.gray300,
+                                    ),
+                                  ),
+                                ),
+                          )
+                        : Container(
+                            color: AppColors.gray100,
+                            child: Center(
+                              child: Icon(
+                                Icons.image,
+                                size: 40,
+                                color: AppColors.gray300,
+                              ),
                             ),
                           ),
-                        ),
-                      )
-                    : Container(
-                        color: AppColors.gray100,
-                        child: Center(
-                          child: Icon(
-                            Icons.image,
-                            size: 40,
-                            color: AppColors.gray300,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _toggleFavorite(p['_id']),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 8,
                           ),
-                        ),
+                        ],
                       ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.topRight,
-              child: Transform.translate(
-                offset: const Offset(-8, -18),
-                child: GestureDetector(
-                  onTap: () => _toggleFavorite(p['_id']),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      isFav ? Icons.favorite : Icons.favorite_border,
-                      size: 18,
-                      color: isFav ? Colors.red : AppColors.gray400,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        size: 21,
+                        color: isFav ? Colors.red : AppColors.gray400,
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -525,7 +531,11 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                child: const Text('Add to Cart'),
+                                child: Text(
+                                  cartState.itemCount > 0
+                                      ? 'Add More Items'
+                                      : 'Add to Cart',
+                                ),
                               ),
                       );
                     },
@@ -540,5 +550,3 @@ class _BusinessStoreScreenState extends State<BusinessStoreScreen> {
     );
   }
 }
-
-
